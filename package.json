@@ -1,0 +1,23 @@
+{
+  "name": "electron-quick-start",
+  "version": "1.0.0",
+  "description": "A lightweight text editor",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron ."
+  },
+  "repository": "https://github.com/electron/electron-quick-start",
+  "keywords": [
+    "Electron",
+    "Editor"
+  ],
+  "author": "Justin Ross",
+  "license": "ISC",
+  "devDependencies": {
+    "electron": "^1.4.1",
+    "electron-connect": "^0.6.0",
+    "gulp": "^3.9.1"
+  },
+  "dependencies": {
+  }
+}

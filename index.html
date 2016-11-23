@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <meta charset="UTF-8">
+  <title>Piano Acquiantance</title>
+  <link rel="stylesheet" href="app/css/style.css">
+  <link href="https://fonts.googleapis.com/css?family=Roboto" rel="stylesheet">
+  <link rel="stylesheet" href="font awesome/css/font-awesome.min.css">
+</head>
+
+<body>
+  <div id="container">
+    <div id="title-bar">
+      <div id="title">MTE</div>
+      <div id="selected-file">
+        </span>
+      </div>
+      <div id="title-bar-btns">
+        <button id="min-btn">&#95;</button>
+        <button id="max-btn">&#x1f5d6;</button>
+        <button id="close-btn">&#x2715;</button>
+      </div>
+    </div>
+    <nav id="side-nav">
+      <button id="open-file" onclick="openFile();">
+      <i class="fa fa-folder" aria-hidden="true"></i>
+      <i class="fa fa-folder-open" aria-hidden="true"></i>
+    </button>
+    </nav>
+    <textarea id="content" onchange="compare();"></textarea>
+  </div>
+</body>
+
+<script>
+    // You can also require other files to run in this process
+    require('electron-connect').client.create();
+</script>
+<script src="app/js/title.js "></script>
+<script src="app/js/renderer.js "></script>
+
+</html>

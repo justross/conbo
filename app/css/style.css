@@ -1,0 +1,117 @@
+/* Variables */
+:root{
+    --nav-width: 145px;
+}
+/* End Variables */
+
+/* Title bar */
+body {
+    font-family: 'Roboto', sans-serif;
+    padding: 0px;
+    margin: 0px;
+    overflow: hidden;
+    white-space: nowrap;
+}
+
+#container {
+    width: 100vw;
+    height: 100vh;
+    display: grid;
+    grid-template-columns: var(--nav-width) auto 86px;
+    grid-template-rows: 30px auto;
+    justify-items: stretch;
+    justify-content: stretch;
+}
+
+#title-bar {
+    -webkit-app-region: drag;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    grid-column-start: 1;
+    grid-column-end: span 4;
+    grid-row-start: 1;
+    grid-row-end: 2;
+}
+
+#title {
+    background-color: lightcyan;
+    grid-column-start: 1;
+    grid-column-end: span 3;
+    grid-row-start: 1;
+    grid-row-end: span 2;
+}
+
+#selected-file{
+    text-align: center;
+    flex: 1;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+#title-bar-btns {
+    -webkit-app-region: no-drag;
+    top: 0px;
+    right: 6px;
+}
+
+#title-bar-btns button {
+    outline: none;
+    font-size: 20px;
+    color: seagreen;
+    font-weight: bolder;
+    background-color: white;
+    border: none;
+}
+
+#title-bar-btns button:hover, #title-bar-btns button:focus {
+    background-color: lightgray;
+}
+/* End Title bar */
+
+/* Side Nav */
+#side-nav {
+    background: teal;
+    color: white;
+    float: left;
+    grid-column-start: 1;
+    grid-column-end: 2;
+    grid-row-start: 2;
+    grid-row-end: span 2;
+}
+
+#side-nav > * {
+    width: inherit;
+}
+
+#open-file {
+    font-size: 300%;
+    outline: none;
+    background-color: inherit;
+    border: none;
+}
+
+#open-file:hover {
+    color: aliceblue;
+}
+
+#open-file > .fa + .fa,
+#open-file:hover > .fa {
+  display: none;
+  padding-left: 10px;
+}
+#open-file:hover > .fa + .fa {
+  display: inherit;
+}
+
+/* End Side Nav */
+
+
+/* Content */
+#content {
+    grid-column-start: 2;
+    grid-column-end: span 3;
+    grid-row-start: 2;
+    grid-row-end: span 2;
+}
+/* End Content */
