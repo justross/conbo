@@ -2,7 +2,7 @@ var app = require('electron').remote;
 var dialog = app.dialog;
 var fs = require('fs');
 let savepath = "app/assets/saved.json";
-const content = document.getElementById('content'),
+const contentDiv = document.getElementById('content'),
     selected = document.getElementById('selected-file'),
     title = document.getElementById('title');
 
@@ -13,7 +13,7 @@ class File {
         this.content = String(fs.readFileSync(filepath));
     }
     load() {
-        content.value = this.content;
+        contentDiv.value = this.content;
         selected.innerHTML = this.filepath;
     }
     update() {
@@ -21,15 +21,44 @@ class File {
     }
 }
 
-// Defines an action made by the user in the editor
-class KeyAction {
-    constructor(inputPosition, command) {
-        this.inputPosition = inputPosition;
-        this.command = command;
+class Editor {
+    constructor(content) {
+        this.content = content;
+        this.lines = content.split('\n');
+        let s = 0;
+        this.lineRanges = this.lines.map(v => {
+            s += v.length;
+            return ({
+                start: s - v.length,
+                end: s
+            });
+        });
     }
 }
 
-let undoStack = [], redoStack = [];
+class EditorFrame {
+    constructor(content) {
+        this.editor = new Editor(content);
+        this.undoStack = [];
+        this.redoStack = [];
+        this.undoStack.push(this.editor);
+    }
+    undo() {
+        if (this.undoStack.length > 0) {
+            this.redoStack.push(this.undoStack.pop());
+        }
+    }
+    redo() {
+        if (this.redoStack.length > 0) {
+            this.undoStack.push(this.redoStack.pop());
+        }
+    }
+    update(content) {
+        this.undoStack.push(this.editor);
+        this.editor = new Editor(content);
+        contentDiv.value = this.editor.content;
+    }
+}
 
 // Promisify fs.readFile()
 function readFileAsync(filepath) {
@@ -52,8 +81,8 @@ function getLastSavedFile() {
         })
         .then(data => {
             data = String(data);
-            content.value = data;
-            currentFileContent = content.value;
+            contentDiv.value = data;
+            currentFileContent = contentDiv.value;
         });
 }
 
@@ -71,63 +100,98 @@ function openFile() {
                     console.log(err);
                 }
             });
-            editingFile = new File(fileNames[0]);
-            editingFile.load();
+            diskFile = new File(fileNames[0]);
+            diskFile.load();
         }
     });
 }
 
 function saveFile() {
-    fs.writeFile(editingFile.filepath, content.value, err => {
+    fs.writeFile(diskFile.filepath, contentDiv.value, err => {
         if (err) {
             console.log(err);
         }
         else {
-            editingFile.content = content.value;
+            diskFile.content = contentDiv.value;
             compare();
         }
     });
 }
 
-// Reads keyboard input of editor window and handles appropriately
+// Helper function to get line(s) of input
+function getLines(startPosition, endPosition) {
+    let size = 0, o = {}, lines = contentDiv.value.split('\n');
+    lines.forEach(v => {
+        if ((size >= startPosition && size <= endPosition) || (size + v.length >= startPosition && size + v.length <= endPosition) || (size <= startPosition && size + v.length >= endPosition)) {
+            a.push(v);
+        }
+        if (size > endPosition) {
+            return a;
+        }
+        size += v.length;
+    });
+    return a;
+}
+
+// Reads keyboard input of editor window
 function processInput() {
-    // CTRL-S
-    if ((event.which == 115 && event.ctrlKey) && (event.which == 19))
-        saveFile();
-    // Tab
-    else if (event.which == 9) {
-        // get caret position/selection
-        let start = event.target.selectionStart;
-        let end = event.target.selectionEnd;
+    event.preventDefault();
+    // get caret position/selection
+    let start = event.target.selectionStart;
+    let end = event.target.selectionEnd;
+    let {value} = event.target;
 
-        let {value} = event.target;
+    switch (true) {
+        // CTRL-S
+        case event.which === 83 && event.ctrlKey:
+            saveFile();
+            break;
 
-        // set textarea value to: text before caret + tab + text after caret
-        event.target.value = value.substring(0, start)
-            + "\t"
-            + value.substring(end);
+        // Shift-Tab
+        case event.which === 9 && event.shiftKey:
+            let ranges = editorFrame.editor.lineRanges;
+            editorFrame.editor.lines.forEach((l, i, a) => {
+                if (l[0] === '\t') {
+                    if (!(start < ranges.start && start < ranges.start) && !(end > ranges.start && end > ranges.end)) {
+                       a[i] = a[i].slice(1);
+                    }
+                }
+            });
+            editorFrame.update(editorFrame.editor.lines.join('\n'));
+            event.target.selectionStart = start;
+            event.target.selectionEnd = end;
+            break;
 
-        // put caret at right position again (add one for the tab)
-        event.target.selectionStart = event.target.selectionEnd = start + 1;
+        // Tab
+        case event.which == 9:
+            // set textarea value to: text before caret + tab + text after caret
+            event.target.value = value.substring(0, start)
+                + "\t"
+                + value.substring(end);
 
-        // prevent the focus lose
-        event.preventDefault();
+            // put caret at right position again (add one for the tab)
+            event.target.selectionStart = event.target.selectionEnd = start + 1;
+            break;
+
+        default:
+
     }
 }
 
 // Compares contents of editing area to File contents
 function compare() {
-    const s = String(content.value);
-    if (!editingFile.edited && editingFile.content !== s) {
-        editingFile.edited = true;
-        editingFile.update();
+    const s = String(contentDiv.value);
+    if (!diskFile.edited && diskFile.content !== s) {
+        diskFile.edited = true;
+        diskFile.update();
     }
-    else if (editingFile.edited && editingFile.content === s) {
-        editingFile.edited = false;
-        editingFile.update();
+    else if (diskFile.edited && diskFile.content === s) {
+        diskFile.edited = false;
+        diskFile.update();
     }
 }
 
-let editingFile = {};
-editingFile = new File(JSON.parse(fs.readFileSync(savepath)).filepath);
-editingFile.load();
+let diskFile = {};
+diskFile = new File(JSON.parse(fs.readFileSync(savepath)).filepath);
+diskFile.load();
+editorFrame = new EditorFrame(diskFile.content);
