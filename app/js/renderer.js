@@ -2,20 +2,34 @@ var app = require('electron').remote;
 var dialog = app.dialog;
 var fs = require('fs');
 let savepath = "app/assets/saved.json";
-const content = document.getElementById('content'), selected = document.getElementById('selected-file');
-let currentFileContent = "";
+const content = document.getElementById('content'),
+    selected = document.getElementById('selected-file'),
+    title = document.getElementById('title');
 
 class File {
     constructor(filepath) {
         this.filepath = filepath;
         this.edited = false;
-        this.content = fs.readFileSync(filepath);
+        this.content = String(fs.readFileSync(filepath));
     }
-    update() {
+    load() {
         content.value = this.content;
         selected.innerHTML = this.filepath;
     }
+    update() {
+        title.innerHTML = this.edited ? 'unsaved' : 'MTE';
+    }
 }
+
+// Defines an action made by the user in the editor
+class KeyAction {
+    constructor(inputPosition, command) {
+        this.inputPosition = inputPosition;
+        this.command = command;
+    }
+}
+
+let undoStack = [], redoStack = [];
 
 // Promisify fs.readFile()
 function readFileAsync(filepath) {
@@ -58,45 +72,62 @@ function openFile() {
                 }
             });
             editingFile = new File(fileNames[0]);
-            editingFile.update();
+            editingFile.load();
         }
     });
 }
 
 function saveFile() {
-
-}
-
-// Compares of
-function compare() {
-
-}
-
-let edited = false;
-content.addEventListener('input', event => {
-    let tmp = String(content.value);
-    if (!edited && currentFileContent !== tmp) {
-        document.getElementById('title').innerHTML = 'unsaved';
-        edited = true;
-    }
-    else if (edited && currentFileContent === tmp) {
-        document.getElementById('title').innerHTML = 'MTE';
-        edited = false;
-    }
-});
-
-content.addEventListener('keypress', event => {
-    if (!(event.which == 115 && event.ctrlKey) && !(event.which == 19))
-        return true;
-    fs.writeFile(selected.innerHTML, content.value, err => {
+    fs.writeFile(editingFile.filepath, content.value, err => {
         if (err) {
             console.log(err);
         }
         else {
-            currentFileContent = content.value;
+            editingFile.content = content.value;
+            compare();
         }
     });
-});
+}
 
-let editingFile = new File(JSON.parse(fs.readFileSync(savepath)).filepath);
-editingFile.update();
+// Reads keyboard input of editor window and handles appropriately
+function processInput() {
+    // CTRL-S
+    if ((event.which == 115 && event.ctrlKey) && (event.which == 19))
+        saveFile();
+    // Tab
+    else if (event.which == 9) {
+        // get caret position/selection
+        let start = event.target.selectionStart;
+        let end = event.target.selectionEnd;
+
+        let {value} = event.target;
+
+        // set textarea value to: text before caret + tab + text after caret
+        event.target.value = value.substring(0, start)
+            + "\t"
+            + value.substring(end);
+
+        // put caret at right position again (add one for the tab)
+        event.target.selectionStart = event.target.selectionEnd = start + 1;
+
+        // prevent the focus lose
+        event.preventDefault();
+    }
+}
+
+// Compares contents of editing area to File contents
+function compare() {
+    const s = String(content.value);
+    if (!editingFile.edited && editingFile.content !== s) {
+        editingFile.edited = true;
+        editingFile.update();
+    }
+    else if (editingFile.edited && editingFile.content === s) {
+        editingFile.edited = false;
+        editingFile.update();
+    }
+}
+
+let editingFile = {};
+editingFile = new File(JSON.parse(fs.readFileSync(savepath)).filepath);
+editingFile.load();

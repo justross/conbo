@@ -67,6 +67,9 @@ body {
 #title-bar-btns button:hover, #title-bar-btns button:focus {
     background-color: lightgray;
 }
+#title-bar-btns button:focus{
+    background-color: purple;
+}
 /* End Title bar */
 
 /* Side Nav */

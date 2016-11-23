@@ -1,17 +1,17 @@
 {
-  "name": "electron-quick-start",
+  "name": "Conbo Text Editor",
   "version": "1.0.0",
   "description": "A lightweight text editor",
   "main": "main.js",
   "scripts": {
     "start": "electron ."
   },
-  "repository": "https://github.com/electron/electron-quick-start",
+  "repository": "https://github.com/justross/conbo",
   "keywords": [
     "Electron",
     "Editor"
   ],
-  "author": "Justin Ross",
+  "author": "justross",
   "license": "ISC",
   "devDependencies": {
     "electron": "^1.4.1",
@@ -19,5 +19,6 @@
     "gulp": "^3.9.1"
   },
   "dependencies": {
+    "angular": "^1.5.8"
   }
 }

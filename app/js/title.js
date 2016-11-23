@@ -6,6 +6,8 @@
     document.getElementById("min-btn").addEventListener("click", function (e) {
       const window = remote.getCurrentWindow();
       window.minimize();
+      document.activeElement = null;
+      document.activeElement.blur();
     });
     
     document.getElementById("max-btn").addEventListener("click", function (e) {
