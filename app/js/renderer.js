@@ -13,7 +13,7 @@ class File {
         this.content = String(fs.readFileSync(filepath));
     }
     load() {
-        contentDiv.value = this.content;
+        contentDiv.innerHTML = this.content;
         selected.innerHTML = this.filepath;
     }
     update() {
@@ -56,7 +56,7 @@ class EditorFrame {
     update(content) {
         this.undoStack.push(this.editor);
         this.editor = new Editor(content);
-        contentDiv.value = this.editor.content;
+        contentDiv.innerHTML = this.editor.content;
     }
 }
 
@@ -81,8 +81,8 @@ function getLastSavedFile() {
         })
         .then(data => {
             data = String(data);
-            contentDiv.value = data;
-            currentFileContent = contentDiv.value;
+            contentDiv.innerHTML = data;
+            currentFileContent = contentDiv.innerHTML;
         });
 }
 
@@ -102,40 +102,26 @@ function openFile() {
             });
             diskFile = new File(fileNames[0]);
             diskFile.load();
+            editorFrame = new EditorFrame(diskFile.content);
         }
     });
 }
 
 function saveFile() {
-    fs.writeFile(diskFile.filepath, contentDiv.value, err => {
+    fs.writeFile(diskFile.filepath, contentDiv.innerHTML, err => {
         if (err) {
             console.log(err);
         }
         else {
-            diskFile.content = contentDiv.value;
+            diskFile.content = contentDiv.innerHTML;
             compare();
         }
     });
 }
 
-// Helper function to get line(s) of input
-function getLines(startPosition, endPosition) {
-    let size = 0, o = {}, lines = contentDiv.value.split('\n');
-    lines.forEach(v => {
-        if ((size >= startPosition && size <= endPosition) || (size + v.length >= startPosition && size + v.length <= endPosition) || (size <= startPosition && size + v.length >= endPosition)) {
-            a.push(v);
-        }
-        if (size > endPosition) {
-            return a;
-        }
-        size += v.length;
-    });
-    return a;
-}
-
 // Reads keyboard input of editor window
 function processInput() {
-    event.preventDefault();
+    //event.preventDefault();
     // get caret position/selection
     let start = event.target.selectionStart;
     let end = event.target.selectionEnd;
@@ -153,19 +139,18 @@ function processInput() {
             editorFrame.editor.lines.forEach((l, i, a) => {
                 if (l[0] === '\t') {
                     if (!(start < ranges.start && start < ranges.start) && !(end > ranges.start && end > ranges.end)) {
-                       a[i] = a[i].slice(1);
+                        a[i] = a[i].slice(1);
                     }
                 }
             });
             editorFrame.update(editorFrame.editor.lines.join('\n'));
-            event.target.selectionStart = start;
-            event.target.selectionEnd = end;
+            console.log(event.target.selectionDirection);
             break;
 
         // Tab
         case event.which == 9:
             // set textarea value to: text before caret + tab + text after caret
-            event.target.value = value.substring(0, start)
+            event.target.innerHTML = value.substring(0, start)
                 + "\t"
                 + value.substring(end);
 
@@ -180,7 +165,7 @@ function processInput() {
 
 // Compares contents of editing area to File contents
 function compare() {
-    const s = String(contentDiv.value);
+    const s = String(contentDiv.innerHTML);
     if (!diskFile.edited && diskFile.content !== s) {
         diskFile.edited = true;
         diskFile.update();
