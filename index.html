@@ -9,7 +9,7 @@
   <link rel="stylesheet" href="font awesome/css/font-awesome.min.css">
 </head>
 
-<body>
+<body onmouseup="mSetSelectionDirection();">
   <div id="container">
     <div id="title-bar">
       <div id="title">MTE</div>
@@ -36,7 +36,6 @@
 </body>
 
 <script>
-    // You can also require other files to run in this process
     require('electron-connect').client.create();
 </script>
 <script src="app/js/title.js "></script>

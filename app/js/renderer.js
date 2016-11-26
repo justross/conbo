@@ -26,7 +26,7 @@ class Editor {
     constructor(content) {
         this.rawText = content;
         this.lines = content.split('\n');
-        this.parsedText = this.parse(content);
+        this.parsedText = contentDiv.innerHTML = this.parse(content);
         let s = 0;
         this.lineRanges = this.lines.map(v => {
             s += v.length;
@@ -35,12 +35,21 @@ class Editor {
                 end: s
             });
         });
+        this.selectionDirection = 'none';
     }
     parse() {
-        return this.rawText.split(' ').forEach((token, i, a) => {
-            a[i] = 'hi';
-            //a.push('<span style="-webkit-text-fill-color: green;">' + token + '</span>');
+        let a = [];
+        this.rawText.split(/(\s|\.)/).forEach((token) => {
+            let color = 'green';
+            switch (true) {
+                case token === 'var' || token === '.':
+                    color = 'tomato';
+                    break;
+            }
+            if (token !== ' ') a.push(`<span style="-webkit-text-fill-color: ${color};">${token}</span>`);
+            else a.push(token);
         });
+        return a.join("");
     }
 }
 
@@ -128,7 +137,7 @@ function saveFile() {
 
 // Reads keyboard input of editor window
 function processInput() {
-    //event.preventDefault();
+    event.preventDefault();
     // get caret position/selection
     let start = event.target.selectionStart;
     let end = event.target.selectionEnd;
@@ -139,6 +148,11 @@ function processInput() {
         case event.which === 83 && event.ctrlKey:
             saveFile();
             break;
+        
+        // Shift-Arrow key
+        case event.which === 37 || event.which === 38 || event.which === 39 || event.which === 40 && event.shiftKey:
+            console.log(window.getSelection());
+        break;
 
         // Shift-Tab
         case event.which === 9 && event.shiftKey:
@@ -151,7 +165,6 @@ function processInput() {
                 }
             });
             editorFrame.update(editorFrame.editor.lines.join('\n'));
-            console.log(event.target.selectionDirection);
             break;
 
         // Tab
@@ -170,6 +183,21 @@ function processInput() {
     }
 }
 
+// Determines selectionDirection from mouse input
+function mSetSelectionDirection() {
+    let direction = 'none';
+    if (window.getSelection) {
+        let sel = window.getSelection();
+        if (!sel.isCollapsed) {
+            let range = document.createRange();
+            range.setStart(sel.anchorNode, sel.anchorOffset);
+            range.setEnd(sel.focusNode, sel.focusOffset);
+            direction = range.collapsed? 'backward' : 'forward';
+            range.detach();
+        }
+    }
+    editorFrame.editor.selectionDirection = direction;
+}
 
 // Compares contents of editing area to File contents
 function compare() {
