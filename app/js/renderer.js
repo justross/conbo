@@ -1,6 +1,7 @@
-var app = require('electron').remote;
-var dialog = app.dialog;
-var fs = require('fs');
+const app = require('electron').remote;
+const dialog = app.dialog;
+const fs = require('fs');
+
 let savepath = "app/assets/saved.json";
 const contentDiv = document.getElementById('content'),
     selected = document.getElementById('selected-file'),
@@ -23,8 +24,9 @@ class File {
 
 class Editor {
     constructor(content) {
-        this.content = content;
+        this.rawText = content;
         this.lines = content.split('\n');
+        this.parsedText = this.parse(content);
         let s = 0;
         this.lineRanges = this.lines.map(v => {
             s += v.length;
@@ -32,6 +34,12 @@ class Editor {
                 start: s - v.length,
                 end: s
             });
+        });
+    }
+    parse() {
+        return this.rawText.split(' ').forEach((token, i, a) => {
+            a[i] = 'hi';
+            //a.push('<span style="-webkit-text-fill-color: green;">' + token + '</span>');
         });
     }
 }
@@ -56,7 +64,7 @@ class EditorFrame {
     update(content) {
         this.undoStack.push(this.editor);
         this.editor = new Editor(content);
-        contentDiv.innerHTML = this.editor.content;
+        contentDiv.innerHTML = content;
     }
 }
 
@@ -88,7 +96,6 @@ function getLastSavedFile() {
 
 function openFile() {
     dialog.showOpenDialog(function (fileNames) {
-        // fileNames is an array that contains all the selected
         if (fileNames === undefined) {
             console.log("No file selected");
         } else {
@@ -108,12 +115,12 @@ function openFile() {
 }
 
 function saveFile() {
-    fs.writeFile(diskFile.filepath, contentDiv.innerHTML, err => {
+    fs.writeFile(diskFile.filepath, contentDiv.innterText, err => {
         if (err) {
             console.log(err);
         }
         else {
-            diskFile.content = contentDiv.innerHTML;
+            diskFile.content = contentDiv.innterText;
             compare();
         }
     });
@@ -162,6 +169,7 @@ function processInput() {
 
     }
 }
+
 
 // Compares contents of editing area to File contents
 function compare() {

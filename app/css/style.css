@@ -126,7 +126,7 @@ body {
     grid-column-end: span 3;
     grid-row-start: 2;
     grid-row-end: span 2;
-    background-color: #1E1E1E;
+    background-color: #1F1F1F;
     cursor: text;
 }
 #content {
@@ -137,8 +137,11 @@ body {
     font-size: 11pt;
     -webkit-font-smoothing : none;
     text-rendering: optimizeSpeed;
-    color: lightblue;
+    color: white; /* caret color */
+    -webkit-text-fill-color: #FDFDFD; /* text color */
 }
+
+
 
 #content:focus {
     outline: none;
