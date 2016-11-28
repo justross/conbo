@@ -7,6 +7,12 @@ const contentDiv = document.getElementById('content'),
     selected = document.getElementById('selected-file'),
     title = document.getElementById('title');
 
+// Adds splice() to String
+String.prototype.splice = function (idx, rem, str) {
+    return this.slice(0, idx) + str + this.slice(idx + Math.abs(rem));
+};
+
+
 class File {
     constructor(filepath) {
         this.filepath = filepath;
@@ -40,13 +46,13 @@ class Editor {
     parse() {
         let a = [];
         this.rawText.split(/(\s|\.)/).forEach((token) => {
-            let color = 'green';
+            let color = 'purple';
             switch (true) {
                 case token === 'var' || token === '.':
                     color = 'tomato';
                     break;
             }
-            if (token !== ' ') a.push(`<span style="-webkit-text-fill-color: ${color};">${token}</span>`);
+            if (token !== ' ' && token.length) a.push(`<span style="-webkit-text-fill-color: ${color};">${token}</span>`);
             else a.push(token);
         });
         return a.join("");
@@ -137,7 +143,6 @@ function saveFile() {
 
 // Reads keyboard input of editor window
 function processInput() {
-    event.preventDefault();
     // get caret position/selection
     let start = event.target.selectionStart;
     let end = event.target.selectionEnd;
@@ -145,37 +150,81 @@ function processInput() {
 
     switch (true) {
         // CTRL-S
-        case event.which === 83 && event.ctrlKey:
+        case event.which === 83 && event.ctrlKey: {
+            event.preventDefault();
             saveFile();
+        }
             break;
-        
-        // Shift-Arrow key
-        case event.which === 37 || event.which === 38 || event.which === 39 || event.which === 40 && event.shiftKey:
-            console.log(window.getSelection());
-        break;
 
         // Shift-Tab
-        case event.which === 9 && event.shiftKey:
-            let ranges = editorFrame.editor.lineRanges;
-            editorFrame.editor.lines.forEach((l, i, a) => {
-                if (l[0] === '\t') {
-                    if (!(start < ranges.start && start < ranges.start) && !(end > ranges.start && end > ranges.end)) {
-                        a[i] = a[i].slice(1);
-                    }
+        case event.which === 9 && event.shiftKey: {
+            event.preventDefault();
+            let sel = window.getSelection(), text = sel.toString(),
+                range = sel.getRangeAt(0), closestNewLine = range.startContainer.parentNode;
+            while (closestNewLine.previousSibling.textContent !== '\n') {
+                closestNewLine = closestNewLine.previousSibling;
+            }
+            if (closestNewLine.textContent === '\t') {
+                closestNewLine.parentNode.removeChild(closestNewLine);
+            }
+            if (closestNewLine.textContent.substring(0, 4) === '    ') {
+                closestNewLine.textContent = closestNewLine.textContent.substring(4, closestNewLine.textContent.length);
+                if (!closestNewLine.length) {
+                    closestNewLine.parentNode.removeChild(closestNewLine);
                 }
-            });
-            editorFrame.update(editorFrame.editor.lines.join('\n'));
+            }
+
+            if (sel.type === 'Range') {
+                let n = range.startContainer.parentNode;
+                while(n.nextSibling !== sel.extentNode.parentNode) {
+                    // TODO: check for stuff
+                }
+
+
+
+
+
+
+
+                range.deleteContents();
+                let arr = [];
+                text.split('\n').forEach((line) => {
+                    if (line.charAt(0) === '\t')
+                        arr.push(line.substring(1, line.length));
+                    else if (line.charAt(0) === ' ' && line.charAt(1) === ' '
+                        && line.charAt(2) === ' ' && line.charAt(3) === ' ')
+
+                        arr.push(line.substring(4, line.length));
+                    else
+                        arr.push(line);
+                });
+                range.insertNode(document.createTextNode(arr.join('\n')));
+            }
+        }
             break;
 
         // Tab
-        case event.which == 9:
-            // set textarea value to: text before caret + tab + text after caret
-            event.target.innerHTML = value.substring(0, start)
-                + "\t"
-                + value.substring(end);
-
-            // put caret at right position again (add one for the tab)
-            event.target.selectionStart = event.target.selectionEnd = start + 1;
+        case event.which == 9: {
+            event.preventDefault();
+            let sel = window.getSelection(), range = sel.getRangeAt(0);
+            if (sel.type === 'Range') {
+                let text = sel.toString();
+                range.deleteContents();
+                let arr = [];
+                text.split('\n').forEach((line) => {
+                    arr.push('    ' + line);
+                });
+                range.insertNode(document.createTextNode(arr.join('\n')));
+            }
+            else {
+                const tabNode = document.createTextNode('\t');
+                range.insertNode(tabNode);
+                range.setStartAfter(tabNode);
+                range.setEndAfter(tabNode);
+                sel.removeAllRanges();
+                sel.addRange(range);
+            }
+        }
             break;
 
         default:
@@ -192,7 +241,7 @@ function mSetSelectionDirection() {
             let range = document.createRange();
             range.setStart(sel.anchorNode, sel.anchorOffset);
             range.setEnd(sel.focusNode, sel.focusOffset);
-            direction = range.collapsed? 'backward' : 'forward';
+            direction = range.collapsed ? 'backward' : 'forward';
             range.detach();
         }
     }

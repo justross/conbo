@@ -139,6 +139,7 @@ body {
     text-rendering: optimizeSpeed;
     color: white; /* caret color */
     -webkit-text-fill-color: #FDFDFD; /* text color */
+    tab-size: 4;
 }
 
 
