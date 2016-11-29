@@ -1,6 +1,7 @@
 /* Variables */
 :root{
     --nav-width: 145px;
+    --title-bar-height: 30px;
 }
 /* End Variables */
 
@@ -25,7 +26,7 @@ body {
     height: 100vh;
     display: grid;
     grid-template-columns: var(--nav-width) auto 86px;
-    grid-template-rows: 30px auto;
+    grid-template-rows: var(--title-bar-height) auto;
     justify-items: stretch;
     justify-content: stretch;
 }
@@ -120,8 +121,8 @@ body {
 /* Content */
 
 #content-container {
-    height: 100%;
-    overflow: scroll;
+    max-height: calc(100vh - var(--title-bar-height));
+    overflow: auto;
     grid-column-start: 2;
     grid-column-end: span 3;
     grid-row-start: 2;
@@ -130,7 +131,9 @@ body {
     cursor: text;
 }
 #content {
-    height: 0;
+    max-width: inherit;
+    max-height: inherit;
+    overflow: auto;
     white-space: pre;
     overflow-wrap: normal;
     font-family: 'Consolas', 'Courier New', monospace;

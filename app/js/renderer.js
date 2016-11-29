@@ -1,8 +1,10 @@
+'use strict';
+
 const app = require('electron').remote;
 const dialog = app.dialog;
 const fs = require('fs');
+const {File} = require('file');
 
-let savepath = "app/assets/saved.json";
 const contentDiv = document.getElementById('content'),
     selected = document.getElementById('selected-file'),
     title = document.getElementById('title');
@@ -12,27 +14,24 @@ String.prototype.splice = function (idx, rem, str) {
     return this.slice(0, idx) + str + this.slice(idx + Math.abs(rem));
 };
 
+// Contains information for a locally stored file
+// class File {
+//     constructor(filePath) {
+//         this.filePath = filePath;
+//         this.content = String(fs.readFileSync(filePath));
+//     }
+// }
 
-class File {
-    constructor(filepath) {
-        this.filepath = filepath;
+
+// A state an unsaved file exists in
+class FileState {
+    constructor(file) {
+        this.file = file;
+        this.fileName = filePath.substring(filePath.lastIndexOf('\\') + 1, filePath.length);
         this.edited = false;
-        this.content = String(fs.readFileSync(filepath));
-    }
-    load() {
-        contentDiv.innerHTML = this.content;
-        selected.innerHTML = this.filepath;
-    }
-    update() {
-        title.innerHTML = this.edited ? 'unsaved' : 'MTE';
-    }
-}
-
-class Editor {
-    constructor(content) {
-        this.rawText = content;
-        this.lines = content.split('\n');
-        this.parsedText = contentDiv.innerHTML = this.parse(content);
+        this.rawText = file.content;
+        this.lines = file.content.split('\n');
+        this.parsedText = contentDiv.innerHTML = this.parse(this.rawText);
         let s = 0;
         this.lineRanges = this.lines.map(v => {
             s += v.length;
@@ -59,9 +58,21 @@ class Editor {
     }
 }
 
+class EditorWindow {
+    constructor() {
+        // Use LRU cache
+        this.files = [];
+    }
+}
+
 class EditorFrame {
-    constructor(content) {
-        this.editor = new Editor(content);
+    constructor(openFiles) {
+        this.openFiles = [];
+        openFiles.filepaths.forEach(file => {
+            this.openFiles.push(new FileState(new File(fs.readFileSync(file))));
+        });
+        this.editor = openFiles;
+        this.activeEditor = {};
         this.undoStack = [];
         this.redoStack = [];
         this.undoStack.push(this.editor);
@@ -78,7 +89,7 @@ class EditorFrame {
     }
     update(content) {
         this.undoStack.push(this.editor);
-        this.editor = new Editor(content);
+        this.editor = new FileState(content);
         contentDiv.innerHTML = content;
     }
 }
@@ -110,12 +121,14 @@ function getLastSavedFile() {
 }
 
 function openFile() {
-    dialog.showOpenDialog(function (fileNames) {
+    const filePath = editorFrame.activeEditorWindow.files[0].filePath.substring(0, editorFrame.activeEditorWindow.files[0].filePath.lastIndexOf('\\'));
+    dialog.showOpenDialog(filePath ,  fileNames => {
         if (fileNames === undefined) {
             console.log("No file selected");
         } else {
-            let obj = {};
-            obj.filepath = fileNames[0];
+            let obj = fs.readFileSync(savepath);
+
+            obj.filepaths = [fileNames[0]];
             obj = JSON.stringify(obj);
             fs.writeFile(savepath, obj, function (err) {
                 if (err) {
@@ -130,13 +143,12 @@ function openFile() {
 }
 
 function saveFile() {
-    fs.writeFile(diskFile.filepath, contentDiv.innterText, err => {
+    fs.writeFile(diskFile.filepath, editorFrame.editor.rawText, err => {
         if (err) {
             console.log(err);
         }
         else {
-            diskFile.content = contentDiv.innterText;
-            compare();
+            diskFile.content = contentDiv.innerText;
         }
     });
 }
@@ -176,7 +188,7 @@ function processInput() {
 
             if (sel.type === 'Range') {
                 let n = range.startContainer.parentNode;
-                while(n.nextSibling !== sel.extentNode.parentNode) {
+                while (n.nextSibling !== sel.extentNode.parentNode) {
                     // TODO: check for stuff
                 }
 
@@ -248,20 +260,6 @@ function mSetSelectionDirection() {
     editorFrame.editor.selectionDirection = direction;
 }
 
-// Compares contents of editing area to File contents
-function compare() {
-    const s = String(contentDiv.innerHTML);
-    if (!diskFile.edited && diskFile.content !== s) {
-        diskFile.edited = true;
-        diskFile.update();
-    }
-    else if (diskFile.edited && diskFile.content === s) {
-        diskFile.edited = false;
-        diskFile.update();
-    }
-}
-
-let diskFile = {};
-diskFile = new File(JSON.parse(fs.readFileSync(savepath)).filepath);
-diskFile.load();
-editorFrame = new EditorFrame(diskFile.content);
+let saveFileContent = JSONparse(fs.readFileSync(savepath));
+editorFrame = new EditorFrame(saveFileContent);
+editorFrame.load();
