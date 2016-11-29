@@ -1,9 +1,8 @@
 'use strict';
 
-const app = require('electron').remote;
-const dialog = app.dialog;
+const {remote} = require('electron');
+const {app, dialog} = remote;
 const fs = require('fs');
-const {File} = require('file');
 
 const contentDiv = document.getElementById('content'),
     selected = document.getElementById('selected-file'),
@@ -15,12 +14,12 @@ String.prototype.splice = function (idx, rem, str) {
 };
 
 // Contains information for a locally stored file
-// class File {
-//     constructor(filePath) {
-//         this.filePath = filePath;
-//         this.content = String(fs.readFileSync(filePath));
-//     }
-// }
+class File {
+    constructor(filePath) {
+        this.filePath = filePath;
+        this.content = String(fs.readFileSync(filePath));
+    }
+}
 
 
 // A state an unsaved file exists in
@@ -121,25 +120,46 @@ function getLastSavedFile() {
 }
 
 function openFile() {
-    const filePath = editorFrame.activeEditorWindow.files[0].filePath.substring(0, editorFrame.activeEditorWindow.files[0].filePath.lastIndexOf('\\'));
-    dialog.showOpenDialog(filePath ,  fileNames => {
-        if (fileNames === undefined) {
-            console.log("No file selected");
-        } else {
-            let obj = fs.readFileSync(savepath);
+    try {
+        const filePath = editorFrame.activeEditorWindow.files[0].filePath.substring(0, editorFrame.activeEditorWindow.files[0].filePath.lastIndexOf('\\'));
+        dialog.showOpenDialog(filePath, fileNames => {
+            if (fileNames === undefined) {
+                console.log("No file selected");
+            } else {
+                let obj = fs.readFileSync(savepath);
 
-            obj.filepaths = [fileNames[0]];
-            obj = JSON.stringify(obj);
-            fs.writeFile(savepath, obj, function (err) {
-                if (err) {
-                    console.log(err);
-                }
-            });
-            diskFile = new File(fileNames[0]);
-            diskFile.load();
-            editorFrame = new EditorFrame(diskFile.content);
-        }
-    });
+                obj.filepaths = [fileNames[0]];
+                obj = JSON.stringify(obj);
+                fs.writeFile(savepath, obj, function (err) {
+                    if (err) {
+                        console.log(err);
+                    }
+                });
+                diskFile = new File(fileNames[0]);
+                diskFile.load();
+                editorFrame = new EditorFrame(diskFile.content);
+            }
+        });
+    } catch (e) {
+        dialog.showOpenDialog(fileNames => {
+            if (fileNames === undefined) {
+                console.log("No file selected");
+            } else {
+                let obj = fs.readFileSync(savepath);
+
+                obj.filepaths = [fileNames[0]];
+                obj = JSON.stringify(obj);
+                fs.writeFile(savepath, obj, function (err) {
+                    if (err) {
+                        console.log(err);
+                    }
+                });
+                diskFile = new File(fileNames[0]);
+                diskFile.load();
+                editorFrame = new EditorFrame(diskFile.content);
+            }
+        });
+    }
 }
 
 function saveFile() {
@@ -257,9 +277,11 @@ function mSetSelectionDirection() {
             range.detach();
         }
     }
-    editorFrame.editor.selectionDirection = direction;
+    // editorFrame.editor.selectionDirection = direction;
 }
 
-let saveFileContent = JSONparse(fs.readFileSync(savepath));
+fs.writeFileSync(process.env.LOCALAPPDATA)
+
+let saveFileContent = JSON.parse(fs.readFileSync(savepath));
 editorFrame = new EditorFrame(saveFileContent);
 editorFrame.load();
