@@ -27,6 +27,7 @@ class FileState {
     constructor(file) {
         this.file = file;
         this.fileName = filePath.substring(filePath.lastIndexOf('\\') + 1, filePath.length);
+        this.directory = "";
         this.edited = false;
         this.rawText = file.content;
         this.lines = file.content.split('\n');
@@ -91,6 +92,10 @@ class EditorFrame {
         this.editor = new FileState(content);
         contentDiv.innerHTML = content;
     }
+    // Searches all EditorWindows for filepath. Returns true if found.
+    contains(filepath) {
+        
+    }
 }
 
 // Promisify fs.readFile()
@@ -119,7 +124,35 @@ function getLastSavedFile() {
         });
 }
 
-function openFile() {
+function openFile(filepath) {
+    switch (typeof filepath) {
+        case 'string': {
+            try {
+                fs.readFileSync(filepath);
+            } catch (e) {
+                console.error(e);
+                filepath = undefined;
+            }
+        }
+        case 'undefined': {
+            filepath = editorFrame.activeEditorWindow.activeEditor.directory;
+            if (filepath === undefined) {
+                console.warn('Directory not found');
+                dialog.showOpenDialog(fileNames => {
+                    if(fileNames === undefined)
+                        console.log('No file selected');
+                    else {
+                        
+                    }
+                });
+            }
+
+
+        }
+            break;
+        default: throw new TypeError(`Expected "string" or "undefined" Got: "${typeof filepath}"`);
+
+    }
     try {
         const filePath = editorFrame.activeEditorWindow.files[0].filePath.substring(0, editorFrame.activeEditorWindow.files[0].filePath.lastIndexOf('\\'));
         dialog.showOpenDialog(filePath, fileNames => {
@@ -280,8 +313,7 @@ function mSetSelectionDirection() {
     // editorFrame.editor.selectionDirection = direction;
 }
 
-fs.writeFileSync(process.env.LOCALAPPDATA)
-
+// window.localStorage.setItem('myCat', 'Tom');
 let saveFileContent = JSON.parse(fs.readFileSync(savepath));
 editorFrame = new EditorFrame(saveFileContent);
 editorFrame.load();
