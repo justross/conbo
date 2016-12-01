@@ -4,34 +4,36 @@ const {remote} = require('electron');
 const {app, dialog} = remote;
 const fs = require('fs');
 
-const contentDiv = document.getElementById('content'),
-    selected = document.getElementById('selected-file'),
-    title = document.getElementById('title');
+const editorTemplate = document.getElementById('editor');
 
 // Adds splice() to String
 String.prototype.splice = function (idx, rem, str) {
     return this.slice(0, idx) + str + this.slice(idx + Math.abs(rem));
 };
 
-// Contains information for a locally stored file
-class File {
-    constructor(filePath) {
-        this.filePath = filePath;
-        this.content = String(fs.readFileSync(filePath));
-    }
-}
-
-
-// A state an unsaved file exists in
-class FileState {
-    constructor(file) {
-        this.file = file;
-        this.fileName = filePath.substring(filePath.lastIndexOf('\\') + 1, filePath.length);
-        this.directory = "";
+class Editor {
+    constructor(filepath) {
+        switch (filepath) {
+            case "string":
+                let fp = filePath.split(filePath.lastIndexOf('\\') + 1, filePath.length);
+                this.fileName = fp[0];
+                this.directory = fp[1];
+                this.filepath = filepath;
+                this.fileContent = String(fs.readFileSync(filepath));
+            default:
+                this.fileName = 'untitled';
+                this.filepath = null;
+                this.fileContent = "";
+                this.directory = "";
+                this.rawText = "";
+        }
+        this.caretPosition = 0;
         this.edited = false;
-        this.rawText = file.content;
-        this.lines = file.content.split('\n');
+        this.lines = rawText.content.split('\n');
+        this.rawText = fileContent;
         this.parsedText = contentDiv.innerHTML = this.parse(this.rawText);
+        this.contentElement = "";
+        this.tabElement = "";
         let s = 0;
         this.lineRanges = this.lines.map(v => {
             s += v.length;
@@ -41,6 +43,9 @@ class FileState {
             });
         });
         this.selectionDirection = 'none';
+        this.undoStack = [];
+        this.undoStack.push({ 'fileContent': this.fileContent, 'caretPosition': this.caretPosition });
+        this.redoStack = [];
     }
     parse() {
         let a = [];
@@ -56,27 +61,6 @@ class FileState {
         });
         return a.join("");
     }
-}
-
-class EditorWindow {
-    constructor() {
-        // Use LRU cache
-        this.files = [];
-    }
-}
-
-class EditorFrame {
-    constructor(openFiles) {
-        this.openFiles = [];
-        openFiles.filepaths.forEach(file => {
-            this.openFiles.push(new FileState(new File(fs.readFileSync(file))));
-        });
-        this.editor = openFiles;
-        this.activeEditor = {};
-        this.undoStack = [];
-        this.redoStack = [];
-        this.undoStack.push(this.editor);
-    }
     undo() {
         if (this.undoStack.length > 0) {
             this.redoStack.push(this.undoStack.pop());
@@ -89,12 +73,72 @@ class EditorFrame {
     }
     update(content) {
         this.undoStack.push(this.editor);
-        this.editor = new FileState(content);
+        this.editor = new Editor(content);
         contentDiv.innerHTML = content;
     }
-    // Searches all EditorWindows for filepath. Returns true if found.
+}
+
+class EditorWindow {
+    constructor() {
+        // Use LRU cache
+        this.files = [];
+    }
+    setActive(file) {
+        this.files.forEach(f => {
+            f.contentElement.classList.toggle('active', f === file);
+            f.tabElement.classList.add('active', f === file);
+        });
+    }
+}
+
+class EditorFrame {
+    constructor(editorFrame) {
+        this.openFiles = [];
+        this.editorWindows = [];
+        this.activeEditor = {};
+        if (editorFrame instanceof EditorFrame) this.deserialize(obj);
+        else if (editorFrame !== undefined) console.warn('constructor object is not of type EditorFrame');
+    }
+
+    // Searches all EditorWindows for filepath. Returns File if found.
     contains(filepath) {
-        
+        this.editorWindows.forEach(win => {
+            win.files.forEach(f => {
+                if (f.filepath === filepath)
+                    return f;
+            });
+        });
+    }
+
+    openFile() {
+        try {
+            filepath = editorFrame.activeEditorWindow.activeEditor.directory;
+            dialog.showOpenDialog(filepath, fileNames => {
+                if (fileNames === undefined)
+                    console.log('No file selected');
+                else {
+                    return fileNames[0];
+                }
+            });
+        } catch (e) {
+            console.warn(e);
+            dialog.showOpenDialog(fileNames => {
+                if (fileNames === undefined)
+                    console.log('No file selected');
+                else {
+                    if (!this.contains(fileNames[0])) {
+                        let f = new File(fileNames[0]);
+                        this.editors.activeEditorWindow.files.push(f);
+                        this.activeEditor = f;
+
+                    }
+                }
+            });
+        }
+    }
+
+    deserialize(obj) {
+        for (let prop in obj) this[prop] = obj[prop];
     }
 }
 
@@ -124,76 +168,6 @@ function getLastSavedFile() {
         });
 }
 
-function openFile(filepath) {
-    switch (typeof filepath) {
-        case 'string': {
-            try {
-                fs.readFileSync(filepath);
-            } catch (e) {
-                console.error(e);
-                filepath = undefined;
-            }
-        }
-        case 'undefined': {
-            filepath = editorFrame.activeEditorWindow.activeEditor.directory;
-            if (filepath === undefined) {
-                console.warn('Directory not found');
-                dialog.showOpenDialog(fileNames => {
-                    if(fileNames === undefined)
-                        console.log('No file selected');
-                    else {
-                        
-                    }
-                });
-            }
-
-
-        }
-            break;
-        default: throw new TypeError(`Expected "string" or "undefined" Got: "${typeof filepath}"`);
-
-    }
-    try {
-        const filePath = editorFrame.activeEditorWindow.files[0].filePath.substring(0, editorFrame.activeEditorWindow.files[0].filePath.lastIndexOf('\\'));
-        dialog.showOpenDialog(filePath, fileNames => {
-            if (fileNames === undefined) {
-                console.log("No file selected");
-            } else {
-                let obj = fs.readFileSync(savepath);
-
-                obj.filepaths = [fileNames[0]];
-                obj = JSON.stringify(obj);
-                fs.writeFile(savepath, obj, function (err) {
-                    if (err) {
-                        console.log(err);
-                    }
-                });
-                diskFile = new File(fileNames[0]);
-                diskFile.load();
-                editorFrame = new EditorFrame(diskFile.content);
-            }
-        });
-    } catch (e) {
-        dialog.showOpenDialog(fileNames => {
-            if (fileNames === undefined) {
-                console.log("No file selected");
-            } else {
-                let obj = fs.readFileSync(savepath);
-
-                obj.filepaths = [fileNames[0]];
-                obj = JSON.stringify(obj);
-                fs.writeFile(savepath, obj, function (err) {
-                    if (err) {
-                        console.log(err);
-                    }
-                });
-                diskFile = new File(fileNames[0]);
-                diskFile.load();
-                editorFrame = new EditorFrame(diskFile.content);
-            }
-        });
-    }
-}
 
 function saveFile() {
     fs.writeFile(diskFile.filepath, editorFrame.editor.rawText, err => {
@@ -244,12 +218,6 @@ function processInput() {
                 while (n.nextSibling !== sel.extentNode.parentNode) {
                     // TODO: check for stuff
                 }
-
-
-
-
-
-
 
                 range.deleteContents();
                 let arr = [];
@@ -313,7 +281,8 @@ function mSetSelectionDirection() {
     // editorFrame.editor.selectionDirection = direction;
 }
 
-// window.localStorage.setItem('myCat', 'Tom');
-let saveFileContent = JSON.parse(fs.readFileSync(savepath));
-editorFrame = new EditorFrame(saveFileContent);
-editorFrame.load();
+const editorFrame = new EditorFrame();
+const localStorage = window.localStorage;
+if (fs.existsSync(localStorage.getItem('default_path'))) {
+    editorFrame.deserialize(JSON.parse(localStorage.getItem('default_content')));
+}

@@ -22,16 +22,20 @@
       </div>
     </div>
     <nav id="side-nav">
-      <button id="open-file" onclick="openFile();">
+      <button id="open-file" onclick="editorFrame.openFile();">
       <i class="fa fa-folder" aria-hidden="true"></i>
       <i class="fa fa-folder-open" aria-hidden="true"></i>
     </button>
     </nav>
     <div id="content-container">
-      <span id="content" contenteditable="true" onkeydown="processInput();"></span>
     </div>
   </div>
 </body>
+
+<template id="editor">
+  <div class="editor-tab"></div>
+  <span class="editor-box" contenteditable="true" onkeydown="processInput();"></span>
+</template>
 
 <script>
     require('electron-connect').client.create();
