@@ -15,7 +15,7 @@ class Editor {
     constructor(filepath) {
         switch (filepath) {
             case "string":
-                let fp = filePath.split(filePath.lastIndexOf('\\') + 1, filePath.length);
+                let fp = filePath.split(filePath.lastIndexOf('\\'), filePath.length);
                 this.fileName = fp[0];
                 this.directory = fp[1];
                 this.filepath = filepath;
@@ -135,6 +135,11 @@ class EditorFrame {
                 }
             });
         }
+    }
+    serialize() {
+        let obj = {};
+        for (let prop in this) obj[prop] = this[prop];
+        return JSON.stringify(obj);
     }
 
     deserialize(obj) {
@@ -283,6 +288,10 @@ function mSetSelectionDirection() {
 
 const editorFrame = new EditorFrame();
 const localStorage = window.localStorage;
-if (fs.existsSync(localStorage.getItem('default_path'))) {
-    editorFrame.deserialize(JSON.parse(localStorage.getItem('default_content')));
+if (localStorage.getItem('default') !== undefined) {
+    const ef = JSON.parse(localStorage.getItem('default'));
+    if (ef.activeEditor.filepath)
+        editorFrame.deserialize(ef);
 }
+else
+    localStorage.default = editorFrame.serialize();
