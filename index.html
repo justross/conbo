@@ -11,15 +11,13 @@
 
 <body onmouseup="mSetSelectionDirection();">
   <div id="container">
-    <div id="title-bar">
-      <div id="title">MTE</div>
-      <div id="selected-file">
-      </div>
-      <div id="title-bar-btns">
-        <button id="min-btn">&#95;</button>
-        <button id="max-btn">&#x1f5d6;</button>
-        <button id="close-btn">&#x2715;</button>
-      </div>
+    <div id="title">MTE</div>
+    <div id="selected-file">
+    </div>
+    <div id="title-bar-btns">
+      <button id="min-btn">&#95;</button>
+      <button id="max-btn">&#x1f5d6;</button>
+      <button id="close-btn">&#x2715;</button>
     </div>
     <nav id="side-nav">
       <button id="open-file" onclick="editorFrame.openFile();">
@@ -27,14 +25,18 @@
       <i class="fa fa-folder-open" aria-hidden="true"></i>
     </button>
     </nav>
+    <div id="tab-bar"></div>
     <div id="content-container">
+      <div id="content"></div>
     </div>
   </div>
 </body>
 
-<template id="editor">
-  <div class="editor-tab"></div>
-  <span class="editor-box" contenteditable="true" onkeydown="processInput();"></span>
+<template id="editor-template">
+  <div class="editor">
+    <div class="editor-tab"></div>
+    <span class="editor-box" contenteditable="true" onkeydown="processInput();"></span>
+  </div>
 </template>
 
 <script>

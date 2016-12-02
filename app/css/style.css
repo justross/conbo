@@ -2,6 +2,7 @@
 :root{
     --nav-width: 145px;
     --title-bar-height: 30px;
+    --tab-bar-height: 40px;
 }
 /* End Variables */
 
@@ -16,7 +17,6 @@ body {
     margin: 0px;
     overflow: hidden;
     white-space: nowrap;
-    
 }
 
 
@@ -26,41 +26,44 @@ body {
     height: 100vh;
     display: grid;
     grid-template-columns: var(--nav-width) auto 86px;
-    grid-template-rows: var(--title-bar-height) auto;
+    grid-template-rows: var(--title-bar-height) var(--tab-bar-height) auto;
     justify-items: stretch;
     justify-content: stretch;
 }
 
-#title-bar {
+#title {
     -webkit-app-region: drag;
-    display: flex;
     justify-content: center;
     align-items: center;
+    background-color: lightcyan;
     grid-column-start: 1;
-    grid-column-end: span 4;
+    grid-column-end: 2;
     grid-row-start: 1;
     grid-row-end: 2;
 }
 
-#title {
-    background-color: lightcyan;
-    grid-column-start: 1;
-    grid-column-end: span 3;
-    grid-row-start: 1;
-    grid-row-end: span 2;
-}
-
 #selected-file{
+    -webkit-app-region: drag;
+    justify-content: center;
+    align-items: center;
     text-align: center;
     flex: 1;
     overflow: hidden;
     text-overflow: ellipsis;
+    grid-column-start: 2;
+    grid-column-end: 3;
+    grid-row-start: 1;
+    grid-row-end: 2;
 }
 
 #title-bar-btns {
     -webkit-app-region: no-drag;
     top: 0px;
     right: 6px;
+    grid-column-start: 3;
+    grid-column-end: 4;
+    grid-row-start: 1;
+    grid-row-end: 2;
 }
 
 #title-bar-btns button {
@@ -88,7 +91,7 @@ body {
     grid-column-start: 1;
     grid-column-end: 2;
     grid-row-start: 2;
-    grid-row-end: span 2;
+    grid-row-end:  4;
 }
 
 #side-nav > * {
@@ -118,15 +121,28 @@ body {
 /* End Side Nav */
 
 
+/* Tab Bar */
+
+#tab-bar {
+    grid-column-start: 2;
+    grid-column-end: 4;
+    grid-row-start: 2;
+    grid-row-end: 3;
+    background-color: #6C6C6C;
+}
+
+/* End Tab Bar */
+
+
 /* Content */
 
 #content-container {
-    max-height: calc(100vh - var(--title-bar-height));
+    max-height: calc(100vh - var(--title-bar-height) - var(--tab-bar-height));
     overflow: auto;
     grid-column-start: 2;
-    grid-column-end: span 3;
-    grid-row-start: 2;
-    grid-row-end: span 2;
+    grid-column-end: 4;
+    grid-row-start: 3;
+    grid-row-end: 4;
     background-color: #1F1F1F;
     cursor: text;
 }
@@ -144,10 +160,21 @@ body {
     -webkit-text-fill-color: #FDFDFD; /* text color */
     tab-size: 4;
 }
-
-
-
 #content:focus {
     outline: none;
 }
+
 /* End Content */
+
+/* Editor */
+
+#editor-box {
+    max-width: inherit;
+    max-height: inherit;
+}
+
+#editor-box:focus {
+    outline: none;
+}
+
+/* End Editor */
