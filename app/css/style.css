@@ -1,8 +1,17 @@
 /* Variables */
 :root{
+    /* colors */
+    --nav-color: #008080;
+    --editor-color: #2F2F2F;
+    --tab-color: #3F3F3F;
+    --title-color: #4CA9A9;
+
+    /* dimensions */
     --nav-width: 145px;
     --title-bar-height: 30px;
-    --tab-bar-height: 40px;
+    --tab-bar-height: 35px;
+    --editor-area-max-width: calc(100vw - var(--nav-width));
+    --editor-area-max-height: calc(100vh - var(--title-bar-height) - var(--tab-bar-height));
 }
 /* End Variables */
 
@@ -31,11 +40,19 @@ body {
     justify-content: stretch;
 }
 
+.title-bar {
+    background-color: var(--title-color);
+}
+
 #title {
+    text-align: center;
+    padding-top: calc(var(--title-bar-height) / 2);
+    color: #333;
+    font-weight: bolder;
+    font-size: 11px;
+    -webkit-font-smoothing: none;
     -webkit-app-region: drag;
-    justify-content: center;
-    align-items: center;
-    background-color: lightcyan;
+    background-color: #ccffff;
     grid-column-start: 1;
     grid-column-end: 2;
     grid-row-start: 1;
@@ -67,19 +84,22 @@ body {
 }
 
 #title-bar-btns button {
+    padding-left: 5px;
+    background: none;
     outline: none;
     font-size: 20px;
-    color: seagreen;
+    color: white;
     font-weight: bolder;
-    background-color: white;
     border: none;
 }
 
-#title-bar-btns button:hover, #title-bar-btns button:focus {
-    background-color: lightgray;
+#title-bar-btns #min-btn {
+    vertical-align: top;
+    padding-bottom: 5px;
 }
-#title-bar-btns button:focus{
-    background-color: purple;
+
+#title-bar-btns button:hover, #title-bar-btns button:focus {
+    color: gray;
 }
 /* End Title bar */
 
@@ -87,11 +107,13 @@ body {
 #side-nav {
     background: teal;
     color: white;
-    float: left;
     grid-column-start: 1;
     grid-column-end: 2;
     grid-row-start: 2;
     grid-row-end:  4;
+    box-shadow: inset -32px 0px 34px -28px #006767;
+    padding-top: 10px;
+    text-align: center;
 }
 
 #side-nav > * {
@@ -103,6 +125,7 @@ body {
     outline: none;
     background-color: inherit;
     border: none;
+    cursor: pointer;
 }
 
 #open-file:hover {
@@ -124,11 +147,13 @@ body {
 /* Tab Bar */
 
 #tab-bar {
+    display: flex;
     grid-column-start: 2;
     grid-column-end: 4;
     grid-row-start: 2;
     grid-row-end: 3;
-    background-color: #6C6C6C;
+    background-color: var(--tab-color);
+    max-width: var(--editor-area-max-width);
 }
 
 /* End Tab Bar */
@@ -137,18 +162,57 @@ body {
 /* Content */
 
 #content-container {
-    max-height: calc(100vh - var(--title-bar-height) - var(--tab-bar-height));
+    max-height: var(--editor-area-max-height);
+    max-width: var(--editor-area-max-width);
     overflow: auto;
     grid-column-start: 2;
     grid-column-end: 4;
     grid-row-start: 3;
     grid-row-end: 4;
-    background-color: #1F1F1F;
+    background-color: var(--editor-color);
     cursor: text;
+    box-shadow: inset 0px 1px 10px -4px rgba(0, 0, 0, 1);
 }
-#content {
-    max-width: inherit;
-    max-height: inherit;
+
+/* End Content */
+
+/* Editor */
+
+
+/* Tab */
+.editor-tab {
+    border: 1px solid #6F6F6F;
+    width: 100px;
+    height: var(--tab-bar-height);
+    line-height: var(--tab-bar-height);
+    vertical-align: middle;
+    padding-left: 10px;
+    color: gray;
+    cursor: -webkit-grab;
+}
+
+.editor-tab.active {
+    background-color: var(--editor-color);
+    color: white;
+    border: none;
+}
+
+.editor-tab.active .close {
+    font-size: 12px;
+    font-weight: 900;
+    float: right;
+    padding-right: 10px;
+    cursor: pointer;
+}
+
+.editor-tab.active .close:hover {
+    font-size: 14px;
+    color: lightcoral;
+}
+/* End Tab */
+
+/* Box */
+.editor-box {
     overflow: auto;
     white-space: pre;
     overflow-wrap: normal;
@@ -160,21 +224,10 @@ body {
     -webkit-text-fill-color: #FDFDFD; /* text color */
     tab-size: 4;
 }
-#content:focus {
+
+.editor-box:focus {
     outline: none;
 }
-
-/* End Content */
-
-/* Editor */
-
-#editor-box {
-    max-width: inherit;
-    max-height: inherit;
-}
-
-#editor-box:focus {
-    outline: none;
-}
+/* End Box */
 
 /* End Editor */

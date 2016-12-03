@@ -6,7 +6,8 @@ const fs = require('fs');
 
 const localStorage = window.localStorage;
 
-const contentElement = document.getElementById('content');
+const contentContainerElement = document.getElementById('content-container');
+const tabBarElement = document.getElementById('tab-bar');
 const editorTemplate = document.getElementById('editor-template');
 
 // Adds splice() to String
@@ -39,13 +40,14 @@ class Editor {
         this.edited = false;
 
         // HTML Elements
-        this.editorElement = editorTemplate.content.children[0];
-        this.tabElement = editorTemplate.content.children[0].children[0];
-        this.contentElement = editorTemplate.content.children[0].children[1];
+        this.tabElement = document.importNode(editorTemplate.content.children[0], true);
+        this.contentElement = document.importNode(editorTemplate.content.children[1], true);
 
-        this.tabElement.innerText = this.fileName;
+        this.tabElement.innerHTML = this.fileName + this.tabElement.innerHTML;
         this.contentElement.innerHTML = this.parsedText;
-        contentElement.appendChild(this.contentElement);
+        contentContainerElement.appendChild(this.contentElement);
+        tabBarElement.appendChild(this.tabElement);
+
 
         let s = 0;
         this.lineRanges = this.lines.map(v => {
@@ -95,11 +97,12 @@ class EditorWindow {
     constructor() {
         this.activeEditor = new Editor();
         this.editors = [this.activeEditor];
+        this.setActive(this.activeEditor);
     }
     setActive(editor) {
         this.editors.forEach(e => {
-            e.contentElement.classList.toggle('active', e === editor);
-            e.tabElement.classList.add('active', e === editor);
+            e.contentElement.classList.toggle('active', (e === editor));
+            e.tabElement.classList.toggle('active', (e === editor));
         });
         this.activeEditor = editor;
     }
