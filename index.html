@@ -30,7 +30,8 @@
 </body>
 
 <template id="editor-template">
-  <div class="editor-tab"><span onclick="close();" class="close">&#x2715;</span></div>
+  <div class="editor-window"></div>
+  <div class="editor-tab" onclick="setActive()"><span onclick="close();" class="close">&#x2715;</span></div>
   <span class="editor-box" contenteditable="true" onkeydown="processInput();"></span>
 </template>
 

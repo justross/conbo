@@ -17,16 +17,16 @@ String.prototype.splice = function (idx, rem, str) {
 
 class Editor {
     constructor(filepath) {
-        switch (filepath) {
+        switch (typeof filepath) {
             case "string":
-                let fp = filePath.split(filePath.lastIndexOf('\\'), filePath.length);
-                this.fileName = fp[0];
-                this.directory = fp[1];
+                this.fileName = filepath.substring(filepath.lastIndexOf('\\') + 1, filepath.length);
+                this.directory = filepath.substring(0, filepath.lastIndexOf('\\'));
                 this.filepath = filepath;
                 this.fileContent = String(fs.readFileSync(filepath));
-                this.rawText = fileContent;
-                this.lines = this.rawText.content.split('\n');
+                this.rawText = this.fileContent;
+                this.lines = this.rawText.split('\n');
                 this.parsedText = this.parse(this.rawText);
+                break;
             default:
                 this.fileName = 'untitled';
                 this.filepath = null;
@@ -38,10 +38,11 @@ class Editor {
         }
         this.caretPosition = 0;
         this.edited = false;
+        this.active = false;
 
         // HTML Elements
-        this.tabElement = document.importNode(editorTemplate.content.children[0], true);
-        this.contentElement = document.importNode(editorTemplate.content.children[1], true);
+        this.tabElement = document.importNode(editorTemplate.content.children[1], true);
+        this.contentElement = document.importNode(editorTemplate.content.children[2], true);
 
         this.tabElement.innerHTML = this.fileName + this.tabElement.innerHTML;
         this.contentElement.innerHTML = this.parsedText;
@@ -93,18 +94,30 @@ class Editor {
     }
 }
 
+
 class EditorWindow {
-    constructor() {
+    constructor(obj) {
+        if(typeof obj === 'object') {
+            
+        }
         this.activeEditor = new Editor();
         this.editors = [this.activeEditor];
         this.setActive(this.activeEditor);
+
+        // HTML Elements
+        this.windowElement = document.importNode(editorTemplate.content.children[0], true);
     }
     setActive(editor) {
-        this.editors.forEach(e => {
-            e.contentElement.classList.toggle('active', (e === editor));
-            e.tabElement.classList.toggle('active', (e === editor));
-        });
-        this.activeEditor = editor;
+        if (this.activeEditor !== editor) {
+            this.editors.forEach(e => {
+                const b = e === editor;
+                e.contentElement.classList.toggle('active', b);
+                e.tabElement.classList.toggle('active', b);
+                e.active = b;
+            });
+            this.activeEditor = editor;
+            editorFrame.activeEditor = editor;
+        }
     }
     contains(filepath) {
         this.editors.forEach(e => {
@@ -126,14 +139,17 @@ class EditorFrame {
             console.warn(e);
         }
         this.editorWindows = [new EditorWindow()];
-        this.activeEditor = this.editorWindows[0].activeEditor;
-        this.openFiles = this.activeEditor;
+        this.activeEditorWindow = this.editorWindows[0];
+        this.activeEditor = this.activeEditorWindow.activeEditor;
+        this.editors = [this.activeEditor];
+        this.setActive(this.activeEditorWindow, this.activeEditor);
+        localStorage.default = this.serialize();
     }
 
     // Searches all EditorWindows for filepath. Returns File if found.
     contains(filepath) {
         this.editorWindows.forEach(win => {
-            win.files.forEach(f => {
+            win.editors.forEach(f => {
                 if (f.filepath === filepath)
                     return f;
             });
@@ -148,10 +164,10 @@ class EditorFrame {
                 console.log('No file selected');
             else {
                 if (!this.contains(fileNames[0])) {
-                    let e = new Editor(fileNames[0]);
+                    const e = new Editor(fileNames[0]);
                     if (!this.activeEditorWindow.contains(e))
-                        this.editors.activeEditorWindow.editors.push(e);
-                    activeEditorWindow.setActive(e);
+                        this.activeEditorWindow.editors.push(e);
+                    this.activeEditorWindow.setActive(e);
                 }
             }
         };
@@ -165,18 +181,53 @@ class EditorFrame {
     }
     serialize() {
         let obj = {};
-        for (let prop in this) obj[prop] = this[prop];
+        for (let prop in this) {
+            if (this[prop] !== "activeEditorWindow" && this[prop] !== "activeEditor")
+                obj[prop] = this[prop];
+        }
         return JSON.stringify(obj);
     }
-
     deserialize(obj) {
-        for (let prop in obj) this[prop] = obj[prop];
+        for (let prop in obj) {
+            switch (prop) {
+                case 'editorWindows': {
+                    let a = [];
+                    obj[prop].forEach(win => {
+                        const o = new EditorWindow();
+                        a.push(o.deserialize())
+                    });
+
+                }
+                    break;
+
+            }
+            this[prop] = obj[prop];
+        }
     }
 
-    setActive(editorWindow) {
-        this.activeEditorWindow = editorWindow;
-        this.activeEditor = editorWindow.activeEditor;
+    setActive(window, editor) {
+        if (this.activeEditorWindow !== window) {
+            this.editorWindows.forEach(win => {
+                win.windowElement.classList.toggle("active", win === window);
+                if (win === window)
+                    this.activeEditorWindow = win;
+            });
+        }
+        window.setActive(editor);
     }
+
+}
+// End EditorFrame
+
+function setActive() {
+    editorFrame.editorWindows.forEach(win => {
+        win.editors.forEach(e => {
+            if (e.tabElement === event.target) {
+                if (e !== editorFrame.activeEditor)
+                    editorFrame.setActive(win, e);
+            }
+        });
+    });
 }
 
 // Promisify fs.readFile()
