@@ -15,30 +15,31 @@ String.prototype.splice = function (idx, rem, str) {
     return this.slice(0, idx) + str + this.slice(idx + Math.abs(rem));
 };
 
+
 class Editor {
-    constructor(filepath) {
-        switch (typeof filepath) {
-            case "string":
-                this.fileName = filepath.substring(filepath.lastIndexOf('\\') + 1, filepath.length);
-                this.directory = filepath.substring(0, filepath.lastIndexOf('\\'));
-                this.filepath = filepath;
-                this.fileContent = String(fs.readFileSync(filepath));
-                this.rawText = this.fileContent;
-                this.lines = this.rawText.split('\n');
-                this.parsedText = this.parse(this.rawText);
-                break;
-            default:
-                this.fileName = 'untitled';
-                this.filepath = null;
-                this.fileContent = "";
-                this.directory = "";
-                this.rawText = "";
-                this.lines = [];
-                this.parsedText = "";
+    constructor(obj) {
+        if (typeof obj === 'object') {
+            this.filepath = obj.filepath;
+            this.fileName = obj.filepath.substring(obj.lastIndexOf('\\') + 1, obj.length);
+            this.directory = obj.filepath.substring(0, obj.lastIndexOf('\\'));
+            this.fileContent = String(fs.readFileSync(obj.filepath));
+            this.rawText = this.fileContent;
+            this.lines = this.rawText.split('\n');
+            this.parsedText = this.parse(this.rawText);
+            this.active = obj.active;
         }
-        this.caretPosition = 0;
+        else {
+            this.fileName = 'untitled';
+            this.filepath = null;
+            this.fileContent = "";
+            this.directory = "";
+            this.rawText = "";
+            this.lines = [];
+            this.parsedText = "";
+            this.active = true;
+            this.caretPosition = 0;
+        }
         this.edited = false;
-        this.active = false;
 
         // HTML Elements
         this.tabElement = document.importNode(editorTemplate.content.children[1], true);
@@ -92,18 +93,28 @@ class Editor {
         this.editor = new Editor(content);
         contentDiv.innerHTML = content;
     }
+
+    serialize() {
+        let obj = {};
+        obj.filepath = this.filepath;
+        obj.active = this.active;
+        return JSON.stringify(obj);
+    }
 }
 
 
 class EditorWindow {
-    constructor(obj) {
-        if(typeof obj === 'object') {
-            
+    constructor({editors, active}) {
+        if (typeof editors === 'array' && typeof active === 'boolean') {
+            this.deserialize(editors);
+            this.active = active;
         }
-        this.activeEditor = new Editor();
-        this.editors = [this.activeEditor];
-        this.setActive(this.activeEditor);
-
+        else {
+            this.activeEditor = new Editor();
+            this.active = false;
+            this.editors = [this.activeEditor];
+            this.setActive(this.activeEditor);
+        }
         // HTML Elements
         this.windowElement = document.importNode(editorTemplate.content.children[0], true);
     }
@@ -126,6 +137,27 @@ class EditorWindow {
         });
         return false;
     }
+
+    serialize() {
+        let obj = {};
+        obj.active = this.active;
+        let a = [];
+        this.editors.forEach(e =>{
+            a.push(e.serialize());
+        });
+        obj.editors = a;
+        return JSON.stringify(obj);
+    }
+
+    deserialize(editors) {
+        let a = [];
+        arr.forEach(eObj =>{
+            a.push(new Editor(eObj.filepath))
+            if(e.active) this.activeEditor = e;
+        });
+        this.editors = a;
+    }
+
 }
 
 class EditorFrame {
@@ -137,13 +169,14 @@ class EditorFrame {
             localStorage.default = this.serialize();
         } catch (e) {
             console.warn(e);
+            this.editorWindows = [new EditorWindow()];
+            this.activeEditorWindow = this.editorWindows[0];
+            this.activeEditor = this.activeEditorWindow.activeEditor;
+            this.editors = [this.activeEditor];
+            this.setActive(this.activeEditorWindow, this.activeEditor);
+            localStorage.default = this.serialize();
         }
-        this.editorWindows = [new EditorWindow()];
-        this.activeEditorWindow = this.editorWindows[0];
-        this.activeEditor = this.activeEditorWindow.activeEditor;
-        this.editors = [this.activeEditor];
-        this.setActive(this.activeEditorWindow, this.activeEditor);
-        localStorage.default = this.serialize();
+
     }
 
     // Searches all EditorWindows for filepath. Returns File if found.
@@ -180,29 +213,22 @@ class EditorFrame {
         }
     }
     serialize() {
-        let obj = {};
-        for (let prop in this) {
-            if (this[prop] !== "activeEditorWindow" && this[prop] !== "activeEditor")
-                obj[prop] = this[prop];
-        }
-        return JSON.stringify(obj);
+        let a = [];
+        this.editorWindows.forEach(eW => {
+            a.push(eW.serialize());
+        });
+        return a;
     }
-    deserialize(obj) {
-        for (let prop in obj) {
-            switch (prop) {
-                case 'editorWindows': {
-                    let a = [];
-                    obj[prop].forEach(win => {
-                        const o = new EditorWindow();
-                        a.push(o.deserialize())
-                    });
-
-                }
-                    break;
-
+    deserialize(editorWindows) {
+        editorWindows.forEach(eW => {
+            const o = new EditorWindow(eW);
+            if(eW.active) {
+                this.activeEditorWindow = eW;
+                this.activeEditor = eW.activeEditor;
             }
-            this[prop] = obj[prop];
-        }
+            this.editorWindows.push(eW);
+            this.editors.push(eW.editors);
+        });
     }
 
     setActive(window, editor) {
