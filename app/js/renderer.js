@@ -18,10 +18,10 @@ String.prototype.splice = function (idx, rem, str) {
 
 class Editor {
     constructor(obj) {
-        if (typeof obj === 'object') {
+        if (typeof obj === 'object' && obj !== null) {
             this.filepath = obj.filepath;
-            this.fileName = obj.filepath.substring(obj.lastIndexOf('\\') + 1, obj.length);
-            this.directory = obj.filepath.substring(0, obj.lastIndexOf('\\'));
+            this.fileName = obj.filepath.substring(obj.filepath.lastIndexOf('\\') + 1, obj.filepath.length);
+            this.directory = obj.filepath.substring(0, obj.filepath.lastIndexOf('\\'));
             this.fileContent = String(fs.readFileSync(obj.filepath));
             this.rawText = this.fileContent;
             this.lines = this.rawText.split('\n');
@@ -43,9 +43,10 @@ class Editor {
 
         // HTML Elements
         this.tabElement = document.importNode(editorTemplate.content.children[1], true);
+        this.filenameElement = this.tabElement.children[0];
         this.contentElement = document.importNode(editorTemplate.content.children[2], true);
 
-        this.tabElement.innerHTML = this.fileName + this.tabElement.innerHTML;
+        this.filenameElement.innerText = this.fileName;
         this.contentElement.innerHTML = this.parsedText;
         contentContainerElement.appendChild(this.contentElement);
         tabBarElement.appendChild(this.tabElement);
@@ -95,23 +96,25 @@ class Editor {
     }
 
     serialize() {
-        let obj = {};
+        const obj = {};
         obj.filepath = this.filepath;
         obj.active = this.active;
-        return JSON.stringify(obj);
+        return obj;
     }
 }
 
 
 class EditorWindow {
-    constructor({editors, active}) {
-        if (typeof editors === 'array' && typeof active === 'boolean') {
+    constructor(obj) {
+        try {
+            const {editors, active} = obj;
             this.deserialize(editors);
             this.active = active;
         }
-        else {
+        catch (e) {
+            console.warn(e.stack);
             this.activeEditor = new Editor();
-            this.active = false;
+            this.active = true;
             this.editors = [this.activeEditor];
             this.setActive(this.activeEditor);
         }
@@ -139,21 +142,25 @@ class EditorWindow {
     }
 
     serialize() {
-        let obj = {};
+        const obj = {}, a = [];
         obj.active = this.active;
-        let a = [];
-        this.editors.forEach(e =>{
+        this.editors.forEach(e => {
             a.push(e.serialize());
         });
         obj.editors = a;
-        return JSON.stringify(obj);
+        return obj;
     }
 
     deserialize(editors) {
-        let a = [];
-        arr.forEach(eObj =>{
-            a.push(new Editor(eObj.filepath))
-            if(e.active) this.activeEditor = e;
+        const a = [];
+        editors.forEach(eObj => {
+            const e = new Editor(eObj.filepath);
+            a.push(e);
+            if (eObj.active) {
+                this.activeEditor = e;
+                if (this.active)
+                    this.setActive(this.activeEditor);
+            }
         });
         this.editors = a;
     }
@@ -162,21 +169,30 @@ class EditorWindow {
 
 class EditorFrame {
     constructor() {
+        this.editorWindows = [];
+        this.activeEditorWindow = null;
+        this.editors = [];
+        this.activeEditor = null;
         try {
             const defaultEditorFrame = JSON.parse(localStorage.getItem('default'));
             if (defaultEditorFrame !== null)
                 this.deserialize(defaultEditorFrame);
-            localStorage.default = this.serialize();
+            else
+                this.defaultConstructor();
         } catch (e) {
-            console.warn(e);
-            this.editorWindows = [new EditorWindow()];
-            this.activeEditorWindow = this.editorWindows[0];
-            this.activeEditor = this.activeEditorWindow.activeEditor;
-            this.editors = [this.activeEditor];
-            this.setActive(this.activeEditorWindow, this.activeEditor);
-            localStorage.default = this.serialize();
+            console.warn(e.stack);
+            this.defaultConstructor();
         }
+        this.activeEditorWindow.setActive(this.activeEditorWindow.activeEditor);
+    }
 
+    defaultConstructor() {
+        this.editorWindows = [new EditorWindow()];
+        this.activeEditorWindow = this.editorWindows[0];
+        this.activeEditor = this.activeEditorWindow.activeEditor;
+        this.editors = [this.activeEditor];
+        this.setActive(this.activeEditorWindow, this.activeEditor);
+        localStorage.default = this.serialize();
     }
 
     // Searches all EditorWindows for filepath. Returns File if found.
@@ -197,7 +213,7 @@ class EditorFrame {
                 console.log('No file selected');
             else {
                 if (!this.contains(fileNames[0])) {
-                    const e = new Editor(fileNames[0]);
+                    const e = new Editor({ filepath: fileNames[0], active: true });
                     if (!this.activeEditorWindow.contains(e))
                         this.activeEditorWindow.editors.push(e);
                     this.activeEditorWindow.setActive(e);
@@ -205,24 +221,24 @@ class EditorFrame {
             }
         };
         try {
-            const filepath = editorFrame.activeEditorWindow.activeEditor.directory;
+            const {filepath} = editorFrame.activeEditor.activeEditor;
             dialog.showOpenDialog({ defaultPath: filepath }, cb);
         } catch (e) {
-            console.warn(e);
+            console.warn(e.stack);
             dialog.showOpenDialog(cb);
         }
     }
     serialize() {
         let a = [];
-        this.editorWindows.forEach(eW => {
-            a.push(eW.serialize());
+        this.editorWindows.forEach(eWObj => {
+            a.push(eWObj);
         });
-        return a;
+        return JSON.stringify(a);
     }
     deserialize(editorWindows) {
-        editorWindows.forEach(eW => {
-            const o = new EditorWindow(eW);
-            if(eW.active) {
+        editorWindows.forEach(eWObj => {
+            const eW = new EditorWindow(eWObj);
+            if (eWObj.active) {
                 this.activeEditorWindow = eW;
                 this.activeEditor = eW.activeEditor;
             }
@@ -248,7 +264,7 @@ class EditorFrame {
 function setActive() {
     editorFrame.editorWindows.forEach(win => {
         win.editors.forEach(e => {
-            if (e.tabElement === event.target) {
+            if (e.tabElement === event.target || e.filenameElement === event.target) {
                 if (e !== editorFrame.activeEditor)
                     editorFrame.setActive(win, e);
             }
@@ -283,14 +299,10 @@ function getLastSavedFile() {
 }
 
 
-function saveFile() {
-    fs.writeFile(diskFile.filepath, editorFrame.editor.rawText, err => {
-        if (err) {
-            console.log(err);
-        }
-        else {
-            diskFile.content = contentDiv.innerText;
-        }
+function saveFile(editor, filepath) {
+    fs.writeFile(filepath, editor.rawText, err => {
+        if (err)
+            throw err;
     });
 }
 
@@ -394,5 +406,4 @@ function mSetSelectionDirection() {
     }
     // editorFrame.editor.selectionDirection = direction;
 }
-
 const editorFrame = new EditorFrame();

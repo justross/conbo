@@ -181,7 +181,7 @@ body {
 
 /* Tab */
 .editor-tab {
-    border: 1px solid #6F6F6F;
+    border-right: 1px solid #6F6F6F;
     width: 100px;
     height: var(--tab-bar-height);
     line-height: var(--tab-bar-height);
@@ -190,6 +190,13 @@ body {
     color: gray;
     cursor: -webkit-grab;
     font-size: 14px;
+}
+
+.editor-tab .filename {
+    display: inline-block;
+    max-width: 75px;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 
 .editor-tab.active {

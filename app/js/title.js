@@ -1,34 +1,33 @@
-(function () {
-  
-  const remote = require('electron').remote;
-  
-  function init() {
-    document.getElementById("min-btn").addEventListener("click", function (e) {
-      const window = remote.getCurrentWindow();
-      window.minimize();
-      document.activeElement = null;
-      document.activeElement.blur();
-    });
-    
-    document.getElementById("max-btn").addEventListener("click", function (e) {
-      const window = remote.getCurrentWindow();
-      if (!window.isMaximized()) {
-        window.maximize();
-      } else {
-        window.unmaximize();
-        }
-      });
-      
-      document.getElementById("close-btn").addEventListener("click", function (e) {
-        const window = remote.getCurrentWindow();
-        window.close();
-      });
+function close() {
+  const window = remote.getCurrentWindow();
+  const a = [];
+  editorFrame.editors.forEach(e => {
+    if (!e.saved())
+      a.push(e);
+  });
+  a.forEach(e => {
+    const cb = (filepath) =>{
+      saveFile(e, filepath);
     };
-    
-    document.onreadystatechange = function () {
-      if (document.readyState == "complete") {
-        init();
-      }
-    };
-          
-})();
+    if (e.filepath !== null)
+      dialog.showSaveDialog({ defaultPath: e.filepath }, cb);
+    else
+      dialog.showSaveDialog(cb);
+  });
+  window.close();
+}
+
+function minimize() {
+  const window = remote.getCurrentWindow();
+  window.minimize();
+  document.activeElement = null;
+  document.activeElement.blur();
+}
+
+function maximize() {
+  const window = remote.getCurrentWindow();
+  if (!window.isMaximized())
+    window.maximize();
+  else
+    window.unmaximize();
+}

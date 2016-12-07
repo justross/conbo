@@ -14,12 +14,12 @@
     <div class="title-bar" id="title">ACTIONS</div>
     <div class="title-bar" id="selected-file"></div>
     <div class="title-bar" id="title-bar-btns">
-      <button id="min-btn">&#95;</button>
-      <button id="max-btn">&#x1f5d6;</button>
-      <button id="close-btn">&#x2715;</button>
+      <button id="min-btn" onclick="minimize()">&#95;</button>
+      <button id="max-btn" onclick="maximize()">&#x1f5d6;</button>
+      <button id="close-btn" onclick="close()">&#x2715;</button>
     </div>
     <nav id="side-nav">
-      <button id="open-file" onclick="editorFrame.openFile();">
+      <button id="open-file" onclick="editorFrame.openFile()">
       <i class="fa fa-folder" aria-hidden="true"></i>
       <i class="fa fa-folder-open" aria-hidden="true"></i>
     </button>
@@ -31,7 +31,9 @@
 
 <template id="editor-template">
   <div class="editor-window"></div>
-  <div class="editor-tab" onclick="setActive()"><span onclick="close();" class="close">&#x2715;</span></div>
+  <div class="editor-tab" onclick="setActive()">
+    <span class="filename"></span><span onclick="close();" class="close">&#x2715;</span>
+  </div>
   <span class="editor-box" contenteditable="true" onkeydown="processInput();"></span>
 </template>
 
