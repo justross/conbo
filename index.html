@@ -16,7 +16,7 @@
     <div class="title-bar" id="title-bar-btns">
       <button id="min-btn" onclick="minimize()">&#95;</button>
       <button id="max-btn" onclick="maximize()">&#x1f5d6;</button>
-      <button id="close-btn" onclick="close()">&#x2715;</button>
+      <button id="close-btn" onclick="winClose()">&#x2715;</button>
     </div>
     <nav id="side-nav">
       <button id="open-file" onclick="editorFrame.openFile()">
@@ -31,10 +31,10 @@
 
 <template id="editor-template">
   <div class="editor-window"></div>
-  <div class="editor-tab" onclick="setActive()">
+  <div class="editor-tab" onclick="editorFrame.setActive()">
     <span class="filename"></span><span onclick="close();" class="close">&#x2715;</span>
   </div>
-  <span class="editor-box" contenteditable="true" onkeydown="processInput();"></span>
+  <span class="editor-box" contenteditable="true" onkeydown="processInput();" onkeyup="addTimer();"></span>
 </template>
 
 <script>
