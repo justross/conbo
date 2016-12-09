@@ -28,6 +28,11 @@ class Editor {
         this.filenameElement = this.tabElement.children[0];
         this.contentElement = document.importNode(editorTemplate.content.children[2], true);
 
+        // Bind Elements to Editor
+        this.contentElement.addEventListener('keydown', this.processInput);
+        this.filenameElement.addEventListener('click', this.setActive()); // TODO: implement setActive which probably involves passing EditorWindow in the constructor
+        this.tabElement.addEventListener('click', this.setActive());
+
         this.filenameElement.innerText = this.fileName;
         this.contentElement.innerHTML = this.parsedText;
         contentContainerElement.appendChild(this.contentElement);
@@ -84,9 +89,100 @@ class Editor {
         return obj;
     }
 
+    saveFile(filepath) {
+        saveFile(this, filepath);
+    }
+
     saved() {
         if (this.edited || this.filepath === null) return false;
         return true;
+    }
+
+    // Reads keyboard input of editor window
+    processInput() {
+        // get caret position/selection
+        let start = event.target.selectionStart;
+        let end = event.target.selectionEnd;
+        let {value} = event.target;
+        clearTimeout(typingTimer);
+
+        switch (true) {
+            // CTRL-S
+            case event.which === 83 && event.ctrlKey: {
+                event.preventDefault();
+                const e = editorFrame.findEditor(event.target);
+                saveFile(e, e.filepath);
+            }
+                break;
+
+            // Shift-Tab
+            case event.which === 9 && event.shiftKey: {
+                event.preventDefault();
+                let sel = window.getSelection(), text = sel.toString(),
+                    range = sel.getRangeAt(0), closestNewLine = range.startContainer.parentNode;
+                while (closestNewLine.previousSibling.textContent !== '\n') {
+                    closestNewLine = closestNewLine.previousSibling;
+                }
+                if (closestNewLine.textContent === '\t') {
+                    closestNewLine.parentNode.removeChild(closestNewLine);
+                }
+                if (closestNewLine.textContent.substring(0, 4) === '    ') {
+                    closestNewLine.textContent = closestNewLine.textContent.substring(4, closestNewLine.textContent.length);
+                    if (!closestNewLine.length) {
+                        closestNewLine.parentNode.removeChild(closestNewLine);
+                    }
+                }
+
+                if (sel.type === 'Range') {
+                    let n = range.startContainer.parentNode;
+                    while (n.nextSibling !== sel.extentNode.parentNode) {
+                        // TODO: check for stuff
+                    }
+
+                    range.deleteContents();
+                    let arr = [];
+                    text.split('\n').forEach((line) => {
+                        if (line.charAt(0) === '\t')
+                            arr.push(line.substring(1, line.length));
+                        else if (line.charAt(0) === ' ' && line.charAt(1) === ' '
+                            && line.charAt(2) === ' ' && line.charAt(3) === ' ')
+
+                            arr.push(line.substring(4, line.length));
+                        else
+                            arr.push(line);
+                    });
+                    range.insertNode(document.createTextNode(arr.join('\n')));
+                }
+            }
+                break;
+
+            // Tab
+            case event.which == 9: {
+                event.preventDefault();
+                let sel = window.getSelection(), range = sel.getRangeAt(0);
+                if (sel.type === 'Range') {
+                    let text = sel.toString();
+                    range.deleteContents();
+                    let arr = [];
+                    text.split('\n').forEach((line) => {
+                        arr.push('    ' + line);
+                    });
+                    range.insertNode(document.createTextNode(arr.join('\n')));
+                }
+                else {
+                    const tabNode = document.createTextNode('\t');
+                    range.insertNode(tabNode);
+                    range.setStartAfter(tabNode);
+                    range.setEndAfter(tabNode);
+                    sel.removeAllRanges();
+                    sel.addRange(range);
+                }
+            }
+                break;
+
+            default:
+
+        }
     }
 }
 

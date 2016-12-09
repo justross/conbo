@@ -24,7 +24,6 @@ function winClose() {
       m = `${a[0].fileName} has not been saved. Would you like to save it now?`;
     }
     o.message = m;
-    o.detail = d;
     dialog.showMessageBox(o, res => {
       switch (res) {
         case 2: return;
@@ -34,16 +33,12 @@ function winClose() {
         case 0:
           let requests = a.reduce((promiseChain, e) => {
             function saveItUp(cb) {
-              if (e.filepath !== null)
-                dialog.showSaveDialog({ defaultPath: e.filepath }, filepath => {
-                  saveFile(e, filepath);
-                  cb();
-                });
-              else
-                dialog.showSaveDialog(filepath => {
-                  saveFile(e, filepath);
-                  cb();
-                });
+              const o = {};
+              if (e.filepath !== null) o.defaultPath = e.filepath;
+              dialog.showSaveDialog(o, filepath => {
+                e.saveFile(filepath);
+                cb();
+              });
             };
             return promiseChain.then(() => new Promise((resolve) => {
               saveItUp(resolve);
@@ -51,7 +46,7 @@ function winClose() {
           }, Promise.resolve());
           requests.then(() => {
             localStorage.default = editorFrame.serialize();
-            window.close();
+            // window.close();
           });
       }
     });
