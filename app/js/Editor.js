@@ -1,56 +1,65 @@
 class Editor {
-    constructor(obj) {
-        if (typeof obj === 'object' && obj !== null) {
-            this.filepath = obj.filepath;
-            this.fileName = obj.filepath.substring(obj.filepath.lastIndexOf('\\') + 1, obj.filepath.length);
-            this.directory = obj.filepath.substring(0, obj.filepath.lastIndexOf('\\'));
-            this.fileContent = String(fs.readFileSync(obj.filepath));
-            this.rawText = this.fileContent;
-            this.lines = this.rawText.split('\n');
-            this.parsedText = this.parse(this.rawText);
-            this.active = obj.active;
+    /* Fields
+        Serialized:
+            filepath;
+        
+        Not Serialized:
+            fileName = 'untitled';
+            fileContent = '';
+            directory = '';
+            rawText = '';
+            lines = [];
+            parsedText = '';
+            caretPosition = 0;
+            active = true;
+            edited = false;
+            undoStack = [];
+            redoStack = [];
+            // HTML Elements
+                tabElement = document.importNode(editorTemplate.content.children[1], true);
+                filenameElement = this.tabElement.children[0];
+                contentElement = document.importNode(editorTemplate.content.children[2], true);
+    */
+    constructor(obj = null) {
+        try {
+            this.deserialize(obj);
         }
-        else {
+        catch (e) {
+            console.warn(e);
             this.fileName = 'untitled';
             this.filepath = null;
-            this.fileContent = "";
-            this.directory = "";
-            this.rawText = "";
+            this.fileContent = '';
+            this.directory = '';
+            this.editorViews = [new EditorView(this)];
+            this.activeEditorViews = this.editorViews[0];
+            this.rawText = '';
             this.lines = [];
-            this.parsedText = "";
+            this.parsedText = '';
             this.active = true;
             this.caretPosition = 0;
+            this.edited = false;
         }
-        this.edited = false;
+        finally {
+            // HTML Elements
+            this.tabElement = document.importNode(editorTemplate.content.children[1], true);
+            this.filenameElement = this.tabElement.children[0];
+            this.contentElement = document.importNode(editorTemplate.content.children[2], true);
 
-        // HTML Elements
-        this.tabElement = document.importNode(editorTemplate.content.children[1], true);
-        this.filenameElement = this.tabElement.children[0];
-        this.contentElement = document.importNode(editorTemplate.content.children[2], true);
+            this.undoStack = [];
+            this.undoStack.push({ 'fileContent': this.fileContent, 'caretPosition': this.caretPosition });
+            this.redoStack = [];
 
-        // Bind Elements to Editor
-        this.contentElement.addEventListener('keydown', this.processInput);
-        this.filenameElement.addEventListener('click', this.setActive()); // TODO: implement setActive which probably involves passing EditorWindow in the constructor
-        this.tabElement.addEventListener('click', this.setActive());
+            // Bind Elements to Editor
+            this.contentElement.addEventListener('keydown', this.processInput);
+            this.filenameElement.addEventListener('click', this.setActive); // TODO: implement setActive which probably involves passing EditorWindow in the constructor
+            this.tabElement.addEventListener('click', this.setActive);
 
-        this.filenameElement.innerText = this.fileName;
-        this.contentElement.innerHTML = this.parsedText;
-        contentContainerElement.appendChild(this.contentElement);
-        tabBarElement.appendChild(this.tabElement);
+            this.filenameElement.innerText = this.fileName;
+            this.contentElement.innerHTML = this.parsedText;
+            contentContainerElement.appendChild(this.contentElement);
+            tabBarElement.appendChild(this.tabElement);
+        }
 
-
-        let s = 0;
-        this.lineRanges = this.lines.map(v => {
-            s += v.length;
-            return ({
-                start: s - v.length,
-                end: s
-            });
-        });
-        this.selectionDirection = 'none';
-        this.undoStack = [];
-        this.undoStack.push({ 'fileContent': this.fileContent, 'caretPosition': this.caretPosition });
-        this.redoStack = [];
     }
     parse() {
         let a = [];
@@ -61,10 +70,10 @@ class Editor {
                     color = 'tomato';
                     break;
             }
-            if (token !== ' ' && token.length) a.push(`<span style="-webkit-text-fill-color: ${color};">${token}</span>`);
+            if (token !== ' ' && token.length) a.push(`<span style='-webkit-text-fill-color: ${color};'>${token}</span>`);
             else a.push(token);
         });
-        return a.join("");
+        return a.join('');
     }
     undo() {
         if (this.undoStack.length > 0) {
@@ -85,8 +94,17 @@ class Editor {
     serialize() {
         const obj = {};
         obj.filepath = this.filepath;
-        obj.active = this.active;
         return obj;
+    }
+
+    deserialize(obj) {
+        this.filepath = obj.filepath;
+        this.fileName = obj.filepath.substring(obj.filepath.lastIndexOf('\\') + 1, obj.filepath.length);
+        this.directory = obj.filepath.substring(0, obj.filepath.lastIndexOf('\\'));
+        this.fileContent = String(fs.readFileSync(obj.filepath));
+        this.rawText = this.fileContent;
+        this.lines = this.rawText.split('\n');
+        this.parsedText = this.parse(this.rawText);
     }
 
     saveFile(filepath) {
@@ -96,6 +114,10 @@ class Editor {
     saved() {
         if (this.edited || this.filepath === null) return false;
         return true;
+    }
+
+    setActive() {
+        return false;
     }
 
     // Reads keyboard input of editor window

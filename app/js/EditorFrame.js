@@ -1,34 +1,25 @@
 class EditorFrame {
     constructor() {
-        this.editorWindows = [];
-        this.activeEditorWindow = null;
-        this.editors = [];
-        this.activeEditor = null;
         try {
             const defaultEditorFrame = JSON.parse(localStorage.getItem('default'));
-            if (defaultEditorFrame !== null)
-                this.deserialize(defaultEditorFrame);
-            else
-                this.defaultConstructor();
+            this.deserialize(defaultEditorFrame);
         } catch (e) {
             console.warn(e.stack);
-            this.defaultConstructor();
+            this.editors = [new Editor()];
+            this.editorWindows = [new EditorWindow(this.editors[0])];
+            this.activeEditorWindow = this.editorWindows[0];
+            this.activeEditorView = this.activeEditorWindow.activeEditorView;
+            this.setActive(this.activeEditorWindow, this.activeEditor);
+            localStorage.default = this.serialize();
         }
-        this.setActive(this.activeEditor);
-    }
-
-    defaultConstructor() {
-        this.editorWindows = [new EditorWindow()];
-        this.activeEditorWindow = this.editorWindows[0];
-        this.activeEditor = this.activeEditorWindow.activeEditor;
-        this.editors = [this.activeEditor];
-        this.setActive(this.activeEditorWindow, this.activeEditor);
-        localStorage.default = this.serialize();
+        finally {
+            this.setActive(this.activeEditorView);
+        }
     }
 
     // Searches Editors for filepath. returns Editor if found.
     contains(filepath) {
-        for(let e in this.editors) {
+        for (let e in this.editors) {
             if (this.editors[e].filepath === filepath)
                 return e;
         }
@@ -57,22 +48,25 @@ class EditorFrame {
             dialog.showOpenDialog(cb);
         }
     }
+
     serialize() {
-        let a = [];
-        this.editorWindows.forEach(eWObj => {
-            a.push(eWObj);
+        const eFObj = {};
+        eFObj.serializedEditorWindows = this.editorWindows.map(eW => {
+            return eW.serialize();
         });
-        return JSON.stringify(a);
+        eFObj.serializedEditors = this.editors.map(e => {
+            return e.serialize();
+        });
+        return JSON.stringify(eFObj);
     }
-    deserialize(editorWindows) {
-        editorWindows.forEach(eWObj => {
-            const eW = new EditorWindow(eWObj);
-            if (eWObj.active) {
-                this.activeEditorWindow = eW;
-                this.activeEditor = eW.activeEditor;
-            }
-            this.editorWindows.push(eW);
-            this.editors = this.editors.concat(eW.editors);
+
+    deserialize(eFObj) {
+        this.editorWindows = eFObj.serializedEditorWindows.map(eWObj => {
+            return eWObj.deserialize();
+        });
+
+        this.editors = eFObj.serializedEditors.map(eObj => {
+            return eObj.deserialize();
         });
     }
 
@@ -82,7 +76,7 @@ class EditorFrame {
                 if (this.activeEditorWindow !== w) {
                     this.activeEditorWindow = w;
                     this.editorWindows.forEach(win => {
-                        win.windowElement.classList.toggle("active", win === w);
+                        win.windowElement.classList.toggle('active', win === w);
                         if (win !== w) {
                             this.activeEditorWindow = win;
                             win.setActive(editor);
@@ -99,11 +93,21 @@ class EditorFrame {
         this.activeEditor = this.activeEditorWindow.activeEditor;
     }
 
+    findOrCreateEditor(filepath) {
+        for (const i in this.editors) {
+            if (this.editors[i].filepath === filepath)
+                return this.editors[i];
+        }
+        const e = new Editor({
+            filepath: filepath
+        });
+    }
+
     findEditor(element) {
-        switch(true) {
+        switch (true) {
             case element.classList.contains('editor-box'):
-                for(let i in this.editors) {
-                    if(this.editors[i].contentElement === element) return this.editors[i];
+                for (const i in this.editors) {
+                    if (this.editors[i].contentElement === element) return this.editors[i];
                 }
                 return false;
         }

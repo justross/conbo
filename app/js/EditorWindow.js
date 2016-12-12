@@ -1,56 +1,52 @@
 class EditorWindow {
-    constructor(obj) {
+    constructor(obj = null) {
         try {
-            const {editors, active} = obj;
+            const {editorViews, active} = obj;
             this.deserialize(editors);
         }
         catch (e) {
-            console.warn(e.stack);
-            this.activeEditor = {};
+            console.warn(e.stack); // for debugging purposes
+            this.activeEditorView = editorFrame.activeEditor;
             this.active = true;
-            this.editors = [new Editor()];
-            this.setActive(this.editors[0]);
+            this.editorViews = [editorFrame.activeEditor.activeEditorViews[0]];
+            this.setActive();
         }
-        // HTML Elements
-        this.windowElement = document.importNode(editorTemplate.content.children[0], true);
+        finally {
+            // HTML Elements
+            this.windowElement = document.importNode(editorTemplate.content.children[0], true);
+        }
+
     }
-    setActive(editor) {
-        if (this.activeEditor !== editor) {
+
+    setActive(editorView) {
+        if (this.activeEditor !== editorView) {
             this.editors.forEach(e => {
-                const b = e === editor;
+                const b = e === editorView;
                 e.contentElement.classList.toggle('active', b);
                 e.tabElement.classList.toggle('active', b);
                 e.active = b;
-                if(b) this.activeEditor = e;
+                if (b) this.activeEditor = e;
             });
         }
-    }
-    contains(editor) {
-        for (let i in this.editors) {
-            if (this.editors[i] === editor) return true;
-        }
-        return false;
     }
 
     serialize() {
         const obj = {}, a = [];
         obj.active = this.active;
-        this.editors.forEach(e => {
+        this.editorViews.forEach(e => {
             a.push(e.serialize());
         });
         obj.editors = a;
         return obj;
     }
 
-    deserialize(editors) {
-        const a = [];
-        editors.forEach(eObj => {
-            const e = new Editor(eObj);
-            a.push(e);
-            if(eObj.active)
+    deserialize(eWObj) {
+        this.editorViews = eWObj.editorViews.map(eVObj => {
+            const eV = new EditorView(eVObj);
+            if (eVObj.active)
                 this.setActive(e);
+            return eV;
         });
-        this.editors = a;
     }
 
 }

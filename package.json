@@ -6,6 +6,12 @@
   "scripts": {
     "start": "electron ."
   },
+  "eslintConfig": {
+    "env": {
+      "es6": true,
+      "node": true
+    }
+  },
   "repository": "https://github.com/justross/conbo",
   "keywords": [
     "Electron",
@@ -16,9 +22,9 @@
   "devDependencies": {
     "electron": "^1.4.1",
     "electron-connect": "^0.6.0",
-    "gulp": "^3.9.1"
+    "eslint": "^3.12.0",
+    "gulp": "^3.9.1",
+    "gulp-eslint": "^3.0.1"
   },
-  "dependencies": {
-    "angular": "^1.5.8"
-  }
+  "dependencies": {}
 }

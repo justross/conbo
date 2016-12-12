@@ -3,9 +3,11 @@
 const {remote} = require('electron');
 const {app, dialog} = remote;
 const fs = require('fs');
+
 const {EditorFrame} = require('./app/js/EditorFrame');
 const {EditorWindow} = require('./app/js/EditorWindow');
 const {Editor} = require('./app/js/Editor');
+const {EditorView} = require('./app/js/EditorView');
 
 const localStorage = window.localStorage;
 
@@ -29,7 +31,7 @@ function readFileAsync(filepath) {
                 reject(err);
             else
                 resolve(data);
-        })
+        });
     });
 }
 

@@ -11,12 +11,12 @@ function winClose() {
       buttons: ['Save', 'Don\'t save', 'Cancel'],
       noLink: true,
       detail: 'Your progress will be lost if you don\'t save'
-    }
-    let m = "";
+    };
+    let m = '';
     if (a.length > 1) {
       m = `The following files have not been saved:
 
-          ${a.map(v => { return v.fileName }).join('\n')}
+          ${a.map(v => { return v.fileName; }).join('\n')}
 
           Would you like to save them now?`;
     }
